@@ -245,6 +245,8 @@
         let selectedWire = null;
         let selectedComponents =[];
         let editingComponent = null;
+        let clipboard = null;
+        let pasteOffset = 30;
         
         // Track valid pin drags instead of immediate single clicks
         let dragStartMousePos = { x: 0, y: 0 };
@@ -987,17 +989,98 @@
                 return; // Let user type freely
             }
 
-            if (e.key.toLowerCase() === 'v') {
+            if (e.key.toLowerCase() === 'v' && !e.metaKey && !e.ctrlKey) {
                 isSelectMode = false;
                 updateModeUI();
                 draw();
                 return;
             }
 
-            if (e.key.toLowerCase() === 's') {
+            if (e.key.toLowerCase() === 's' && !e.metaKey && !e.ctrlKey) {
                 isSelectMode = true;
                 updateModeUI();
                 draw();
+                return;
+            }
+
+            // Copy Action
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
+                e.preventDefault();
+                if (selectedComponents.length > 0) {
+                    clipboard = {
+                        components: selectedComponents.map(c => ({
+                            id: c.id,
+                            type: c.type,
+                            x: c.x,
+                            y: c.y,
+                            width: c.width,
+                            height: c.height,
+                            label: c.label,
+                            state: c.state
+                        })),
+                        wires:[]
+                    };
+                    
+                    // Capture wires between selected components
+                    wires.forEach(w => {
+                        if (selectedComponents.includes(w.from.component) && selectedComponents.includes(w.to.component)) {
+                            clipboard.wires.push({
+                                fromCompId: w.from.component.id,
+                                fromType: w.from.type,
+                                fromPinIndex: w.from.component[w.from.type + 's'].indexOf(w.from.pin),
+                                toCompId: w.to.component.id,
+                                toType: w.to.type,
+                                toPinIndex: w.to.component[w.to.type + 's'].indexOf(w.to.pin)
+                            });
+                        }
+                    });
+                    pasteOffset = 30; // reset paste offset
+                }
+                return;
+            }
+
+            // Paste Action
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
+                e.preventDefault();
+                if (clipboard && clipboard.components.length > 0) {
+                    const idMap = new Map();
+                    selectedComponents =[]; // Clear current selection to focus on newly pasted ones
+                    
+                    // Recreate components
+                    clipboard.components.forEach(cc => {
+                        const newComp = new Component(cc.type, cc.x + pasteOffset, cc.y + pasteOffset);
+                        newComp.width = cc.width;
+                        newComp.height = cc.height;
+                        if (cc.type === 'label_box') newComp.label = cc.label;
+                        if (cc.type === 'input') newComp.state = cc.state;
+                        
+                        components.push(newComp);
+                        selectedComponents.push(newComp);
+                        idMap.set(cc.id, newComp);
+                    });
+                    
+                    // Recreate wires between the duplicated components
+                    clipboard.wires.forEach(cw => {
+                        const fromComp = idMap.get(cw.fromCompId);
+                        const toComp = idMap.get(cw.toCompId);
+                        if (fromComp && toComp) {
+                            const fromPin = fromComp[cw.fromType + 's'][cw.fromPinIndex];
+                            const toPin = toComp[cw.toType + 's'][cw.toPinIndex];
+                            
+                            if (fromPin && toPin) {
+                                wires.push({
+                                    from: { pin: fromPin, type: cw.fromType, component: fromComp },
+                                    to: { pin: toPin, type: cw.toType, component: toComp }
+                                });
+                                toPin.connections.push(fromComp);
+                            }
+                        }
+                    });
+                    
+                    pasteOffset += 30; // shift next paste
+                    updateLogic();
+                    draw();
+                }
                 return;
             }
 
