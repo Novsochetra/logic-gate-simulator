@@ -150,6 +150,45 @@
             z-index: 1000;
         }
 
+        .sim-control {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 1000;
+            outline: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            font-family: inherit;
+        }
+
+        .sim-control:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .sim-control:active {
+            transform: translateY(0);
+        }
+
+        .sim-control.stopped {
+            background: rgba(255, 59, 48, 0.15);
+            color: #FF453A;
+            border-color: rgba(255, 59, 48, 0.3);
+        }
+
+        .sim-control.stopped:hover {
+            background: rgba(255, 59, 48, 0.25);
+        }
+
         .label-editor {
             position: fixed;
             display: none;
@@ -170,6 +209,8 @@
 </head>
 <body>
     <canvas id="canvas"></canvas>
+
+    <button class="sim-control stopped" id="toggleSimBtn">▶ Play Simulation</button>
     
     <div class="nav-bar">
         <button class="nav-item active" id="modePan">
@@ -220,6 +261,7 @@
         const popup = document.getElementById('componentPopup');
         const zoomIndicator = document.getElementById('zoomIndicator');
         const labelEditor = document.getElementById('labelEditor');
+        const toggleSimBtn = document.getElementById('toggleSimBtn');
 
         // Constants
         const GRID_SIZE = 30;
@@ -925,16 +967,15 @@
             draw();
         }
 
-        // Kept for backward compatibility with UI event hookups so we don't throw errors
-        // Logic evaluation is now asynchronously handled via the setInterval loop below
         function updateLogic() {}
 
         // ----------------------------------------------------------------------
-        // SIMULATION TICK ENGINE: Replaces the buggy infinite loop solver.
-        // Runs at a steady 40 frames per second, allowing signals to correctly 
-        // propagate step-by-step and oscillators to naturally blink over time.
+        // SIMULATION TICK ENGINE: Play/Stop controlled
         // ----------------------------------------------------------------------
-        setInterval(() => {
+        let isSimulating = false; // Start in idle mode
+        let simInterval = null;
+
+        function simulationTick() {
             let changed = false;
             
             // Phase 1: Calculate the next states of all components 
@@ -956,7 +997,22 @@
             if (changed) {
                 draw();
             }
-        }, 25); 
+        }
+
+        toggleSimBtn.addEventListener('click', () => {
+            isSimulating = !isSimulating;
+            if (isSimulating) {
+                simInterval = setInterval(simulationTick, 25);
+                toggleSimBtn.innerHTML = '⏸ Stop Simulation';
+                toggleSimBtn.classList.remove('stopped');
+            } else {
+                clearInterval(simInterval);
+                simInterval = null;
+                toggleSimBtn.innerHTML = '▶ Play Simulation';
+                toggleSimBtn.classList.add('stopped');
+            }
+            toggleSimBtn.blur();
+        });
 
         function openLabelEditor(comp) {
             editingComponent = comp;
@@ -1117,6 +1173,12 @@
                     components = components.filter(c => !selectedComponents.includes(c));
                     selectedComponents =[];
                 }
+                
+                // Trigger logic recalculation if simulation is active so logic states update upon deletion
+                if (isSimulating) {
+                    simulationTick();
+                }
+                
                 draw();
                 return;
             }
@@ -1177,6 +1239,10 @@
                 
                 if (comp.type === 'input' && selectedComponents.includes(comp)) {
                     comp.state = !comp.state;
+                    // Force an immediate evaluation if the simulator is running
+                    if (isSimulating) {
+                        simulationTick();
+                    }
                 }
             } else {
                 if (!selectedComponents.includes(comp)) {
@@ -1186,6 +1252,10 @@
                 
                 if (comp.type === 'input') {
                     comp.state = !comp.state;
+                    // Force an immediate evaluation if the simulator is running
+                    if (isSimulating) {
+                        simulationTick();
+                    }
                 }
             }
 
@@ -1435,6 +1505,11 @@
                                 to: toPin
                             });
                             toPin.pin.connections.push(fromPin.component);
+                            
+                            // Trigger immediate update if running
+                            if (isSimulating) {
+                                simulationTick();
+                            }
                         }
                     } else {
                         popup.style.left = screenX + 'px';
@@ -1538,6 +1613,11 @@
                         to: popupSourcePin
                     });
                     popupSourcePin.pin.connections.push(newComp);
+                }
+                
+                // Trigger immediate update if running
+                if (isSimulating) {
+                    simulationTick();
                 }
             }
             

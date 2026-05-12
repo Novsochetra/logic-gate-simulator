@@ -28,9 +28,11 @@ Here is Current Features We have you don't need to do anything:
 25 Copy Select Component with cmd + c and pasting cmd + v
 26 moving component on canvas snap to each grid make sure all component is align with the grid. becareful on input, output and logic gate. the label box is easier that other.
 27 Mak sure clock oscillator is working
+28 Adding Mode To Play / Pause Simulation. The default state is idle.
 
 Add Features:
    -
+
 Fix Bugs:
    - 
 
