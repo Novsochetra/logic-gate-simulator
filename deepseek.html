@@ -193,6 +193,14 @@
         let dragStartMousePos = { x: 0, y: 0 };
         let pinDragDidMove = false;
 
+        // Group Selection and Multi-drag states
+        let dragStartWorld = { x: 0, y: 0 };
+        let selectedComponentsInitPos =[];
+        let componentDragDidMove = false;
+        let isSelectingBox = false;
+        let selectionBoxStart = { x: 0, y: 0 };
+        let selectionBoxEnd = { x: 0, y: 0 };
+
         // Constants
         const GRID_SIZE = 30;
         const PIN_RADIUS = 6;
@@ -269,7 +277,6 @@
                 }
 
                 if (this.type === 'input') {
-                    // iOS-style toggle (square knob)
                     const toggleWidth = 60;
                     const toggleHeight = 32;
                     const toggleX = this.x + (this.width - toggleWidth) / 2;
@@ -290,7 +297,6 @@
                     ctx.fill();
                     
                 } else if (this.type === 'output') {
-                    // Hexagon LED indicator
                     const centerX = this.x + this.width / 2;
                     const centerY = this.y + this.height / 2;
                     const size = 18;
@@ -311,7 +317,6 @@
                     ctx.fill();
                     ctx.stroke();
                     
-                    // Inner glow when active
                     if (this.state) {
                         ctx.fillStyle = 'rgba(52, 199, 89, 0.4)';
                         ctx.beginPath();
@@ -327,13 +332,11 @@
                     }
                     
                 } else if (this.type === 'gate' || this.type === 'not_gate') {
-                    // Rounded rectangle chip style
                     const chipWidth = 65;
                     const chipHeight = 40;
                     const chipX = this.x + (this.width - chipWidth) / 2;
                     const chipY = this.y + (this.height - chipHeight) / 2;
                     
-                    // Main chip body
                     ctx.fillStyle = this.state ? '#5856D6' : '#2C2C2E';
                     ctx.strokeStyle = this.state ? '#7D7AFF' : '#48484A';
                     ctx.lineWidth = 2;
@@ -342,7 +345,6 @@
                     ctx.fill();
                     ctx.stroke();
                     
-                    // Gate symbol
                     ctx.fillStyle = this.state ? 'white' : '#8E8E93';
                     ctx.font = 'bold 14px monospace';
                     ctx.textAlign = 'center';
@@ -351,7 +353,6 @@
                     ctx.fillText(text, this.x + this.width / 2, this.y + this.height / 2);
                 }
                 
-                // Draw pins
                 this.inputs.forEach(pin => {
                     const px = this.x + pin.x;
                     const py = this.y + pin.y;
@@ -540,23 +541,122 @@
             }
         }
 
+        // Generate orthogonal / straight line points with 90-degree turns
+        function getOrthogonalPath(fromX, fromY, toX, toY, isSelfLoop = false) {
+            const points =[];
+            const offset = 20; // Distance to push horizontally out of a pin
+            
+            points.push({ x: fromX, y: fromY });
+            
+            if (isSelfLoop) {
+                // Route neatly above or below the component
+                const loopDir = toY > fromY ? 1 : -1;
+                const loopY = (toY > fromY ? Math.max(fromY, toY) : Math.min(fromY, toY)) + (loopDir * 45);
+                
+                points.push({ x: fromX + offset, y: fromY });
+                points.push({ x: fromX + offset, y: loopY });
+                points.push({ x: toX - offset, y: loopY });
+                points.push({ x: toX - offset, y: toY });
+            } else {
+                if (fromX + offset < toX - offset) {
+                    // Forward routing
+                    const midX = fromX + (toX - fromX) / 2;
+                    points.push({ x: midX, y: fromY });
+                    points.push({ x: midX, y: toY });
+                } else {
+                    // Backward routing (Requires an S-Shape wrapping around components)
+                    const distY = Math.abs(fromY - toY);
+                    let routeY;
+                    if (distY < 60) {
+                        // Loop beneath if they are directly aligned horizontally
+                        routeY = Math.max(fromY, toY) + 60;
+                    } else {
+                        // Route perfectly in between them vertically
+                        routeY = fromY + (toY - fromY) / 2;
+                    }
+                    
+                    points.push({ x: fromX + offset, y: fromY });
+                    points.push({ x: fromX + offset, y: routeY });
+                    points.push({ x: toX - offset, y: routeY });
+                    points.push({ x: toX - offset, y: toY });
+                }
+            }
+            
+            points.push({ x: toX, y: toY });
+            return points;
+        }
+
+        // Draw an array of points with nice, smooth rounded corners at every 90-degree turn
+        function drawPathWithRoundedCorners(ctx, points, baseRadius) {
+            if (points.length === 0) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            
+            for (let i = 1; i < points.length - 1; i++) {
+                const p0 = points[i - 1];
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                
+                // Calculate dynamic radius to prevent arc overlap glitching on very short line segments
+                const d1 = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+                const d2 = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                const radius = Math.min(baseRadius, d1 / 2, d2 / 2);
+                
+                ctx.arcTo(p1.x, p1.y, p2.x, p2.y, radius);
+            }
+            
+            const last = points[points.length - 1];
+            ctx.lineTo(last.x, last.y);
+            ctx.stroke();
+        }
+
+        // Mathematically calculate minimum distance from a point to a line segment
+        function distancePointToSegment(px, py, x1, y1, x2, y2) {
+            const A = px - x1;
+            const B = py - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+
+            const dot = A * C + B * D;
+            const len_sq = C * C + D * D;
+            let param = -1;
+            
+            if (len_sq !== 0) param = dot / len_sq;
+
+            let xx, yy;
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+
+            const dx = px - xx;
+            const dy = py - yy;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
         function isPointNearWire(worldX, worldY, wire) {
             const fromX = wire.from.component.x + wire.from.pin.x;
             const fromY = wire.from.component.y + wire.from.pin.y;
             const toX = wire.to.component.x + wire.to.pin.x;
             const toY = wire.to.component.y + wire.to.pin.y;
             
+            const isSelfLoop = wire.from.component === wire.to.component;
+            const points = getOrthogonalPath(fromX, fromY, toX, toY, isSelfLoop);
+            
             const threshold = 10 / camera.zoom;
-            for (let t = 0; t <= 1; t += 0.05) {
-                const cx1 = fromX + (toX - fromX) * 0.5;
-                const cy1 = fromY;
-                const cx2 = fromX + (toX - fromX) * 0.5;
-                const cy2 = toY;
-                
-                const x = Math.pow(1-t, 3) * fromX + 3 * Math.pow(1-t, 2) * t * cx1 + 3 * (1-t) * Math.pow(t, 2) * cx2 + Math.pow(t, 3) * toX;
-                const y = Math.pow(1-t, 3) * fromY + 3 * Math.pow(1-t, 2) * t * cy1 + 3 * (1-t) * Math.pow(t, 2) * cy2 + Math.pow(t, 3) * toY;
-                
-                if (Math.hypot(worldX - x, worldY - y) < threshold) {
+            
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                const dist = distancePointToSegment(worldX, worldY, p1.x, p1.y, p2.x, p2.y);
+                if (dist < threshold) {
                     return true;
                 }
             }
@@ -564,69 +664,69 @@
         }
 
         function drawWires() {
-            wires.forEach((wire, index) => {
-                const fromPos = worldToScreen(wire.from.component.x + wire.from.pin.x, 
-                                             wire.from.component.y + wire.from.pin.y);
-                const toPos = worldToScreen(wire.to.component.x + wire.to.pin.x,
-                                           wire.to.component.y + wire.to.pin.y);
-                
+            const scaledRadius = 8 * camera.zoom;
+
+            wires.forEach((wire) => {
+                const fromWorldX = wire.from.component.x + wire.from.pin.x;
+                const fromWorldY = wire.from.component.y + wire.from.pin.y;
+                const toWorldX = wire.to.component.x + wire.to.pin.x;
+                const toWorldY = wire.to.component.y + wire.to.pin.y;
+
                 const isWireSelected = selectedWire === wire;
                 const isWireActive = wire.from.component.state;
+                const isSelfLoop = wire.from.component === wire.to.component;
                 
-                const cx1 = fromPos.x + (toPos.x - fromPos.x) * 0.5;
-                const cy1 = fromPos.y;
-                const cx2 = fromPos.x + (toPos.x - fromPos.x) * 0.5;
-                const cy2 = toPos.y;
+                const points = getOrthogonalPath(fromWorldX, fromWorldY, toWorldX, toWorldY, isSelfLoop);
+                const screenPoints = points.map(p => worldToScreen(p.x, p.y));
 
                 if (isWireSelected) {
                     ctx.strokeStyle = '#34C759';
                     ctx.lineWidth = 7;
                     ctx.shadowColor = '#34C759';
                     ctx.shadowBlur = 20;
-                    ctx.beginPath();
-                    ctx.moveTo(fromPos.x, fromPos.y);
-                    ctx.bezierCurveTo(cx1, cy1, cx2, cy2, toPos.x, toPos.y);
-                    ctx.stroke();
+                    drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
                     ctx.shadowBlur = 0;
                 }
                 
                 ctx.strokeStyle = isWireSelected ? '#34C759' : (isWireActive ? '#34C759' : '#666');
-                ctx.lineWidth = isWireSelected ? 3 : 3;
-                ctx.beginPath();
-                ctx.moveTo(fromPos.x, fromPos.y);
-                ctx.bezierCurveTo(cx1, cy1, cx2, cy2, toPos.x, toPos.y);
-                ctx.stroke();
+                ctx.lineWidth = 3;
+                drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
                 
                 if (isWireSelected) {
                     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
                     ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(fromPos.x, fromPos.y);
-                    ctx.bezierCurveTo(cx1, cy1, cx2, cy2, toPos.x, toPos.y);
-                    ctx.stroke();
+                    drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
                 }
             });
 
             // Draw temporary wire while dragging
             if (isDraggingPin && pinDragDidMove) {
-                const fromPos = worldToScreen(
-                    isDraggingPin.component.x + isDraggingPin.pin.x,
-                    isDraggingPin.component.y + isDraggingPin.pin.y
-                );
-                
+                const fromWorldX = isDraggingPin.component.x + isDraggingPin.pin.x;
+                const fromWorldY = isDraggingPin.component.y + isDraggingPin.pin.y;
+                const mouseWorld = screenToWorld(mousePos.x, mousePos.y);
+
+                let actualFromWorld, actualToWorld;
+                let isSelfLoopTemp = false;
+
+                if (hoveredPin && hoveredPin.component === isDraggingPin.component) {
+                    isSelfLoopTemp = true;
+                }
+
+                if (isDraggingPin.type === 'input') {
+                    actualFromWorld = mouseWorld;
+                    actualToWorld = { x: fromWorldX, y: fromWorldY };
+                } else {
+                    actualFromWorld = { x: fromWorldX, y: fromWorldY };
+                    actualToWorld = mouseWorld;
+                }
+
+                const points = getOrthogonalPath(actualFromWorld.x, actualFromWorld.y, actualToWorld.x, actualToWorld.y, isSelfLoopTemp);
+                const screenPoints = points.map(p => worldToScreen(p.x, p.y));
+
                 ctx.strokeStyle = '#007AFF';
                 ctx.lineWidth = 3;
                 ctx.setLineDash([5, 5]);
-                ctx.beginPath();
-                ctx.moveTo(fromPos.x, fromPos.y);
-                
-                const cx1 = fromPos.x + (mousePos.x - fromPos.x) * 0.5;
-                const cy1 = fromPos.y;
-                const cx2 = fromPos.x + (mousePos.x - fromPos.x) * 0.5;
-                const cy2 = mousePos.y;
-                
-                ctx.bezierCurveTo(cx1, cy1, cx2, cy2, mousePos.x, mousePos.y);
-                ctx.stroke();
+                drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
                 ctx.setLineDash([]);
             }
         }
@@ -656,6 +756,22 @@
             ctx.scale(camera.zoom, camera.zoom);
             
             components.forEach(comp => comp.draw());
+            
+            if (isSelectingBox) {
+                ctx.fillStyle = 'rgba(0, 122, 255, 0.15)';
+                ctx.strokeStyle = '#007AFF';
+                ctx.lineWidth = 1 / camera.zoom;
+                
+                const x = selectionBoxStart.x;
+                const y = selectionBoxStart.y;
+                const w = selectionBoxEnd.x - x;
+                const h = selectionBoxEnd.y - y;
+                
+                ctx.beginPath();
+                ctx.rect(x, y, w, h);
+                ctx.fill();
+                ctx.stroke();
+            }
             
             ctx.restore();
             
@@ -687,26 +803,22 @@
         }
 
         function updateLogic() {
-            // Evaluates circuit logic repeatedly until changes ripple completely through the system
             let changed = true;
             let attempts = 0;
-            const maxAttempts = 1000; // Safeguard to prevent freezing loop on logic cycles (e.g., feedback loops)
+            const maxAttempts = 1000;
 
             while (changed && attempts < maxAttempts) {
                 changed = false;
                 
-                // Snapshot the current state of every component BEFORE this iteration runs
                 const prevStates = new Map();
                 components.forEach(c => prevStates.set(c.id, c.state));
                 
-                // Perform state evaluations
                 components.filter(c => c.type === 'gate' || c.type === 'not_gate').forEach(comp => comp.updateState());
                 components.filter(c => c.type === 'output').forEach(comp => comp.updateState());
                 
-                // Compare and check if any component changed during this loop
                 components.forEach(c => {
                     if (c.state !== prevStates.get(c.id)) {
-                        changed = true; // Still propagating, run it again!
+                        changed = true;
                     }
                 });
                 
@@ -804,7 +916,6 @@
             
             mousePos = { x: screenX, y: screenY };
 
-            // Check for pin click to either select or start drag
             for (let comp of [...components].reverse()) {
                 const pinInfo = comp.getPinAt(world.x, world.y);
                 if (pinInfo) {
@@ -833,21 +944,56 @@
 
             for (let comp of [...components].reverse()) {
                 if (comp.containsPoint(world.x, world.y)) {
-                    if (comp.type === 'input') {
-                        comp.state = !comp.state;
-                        updateLogic();
+                    const isMultiSelectModifier = e.shiftKey || e.metaKey || e.ctrlKey;
+                    
+                    if (isMultiSelectModifier) {
+                        if (selectedComponents.includes(comp)) {
+                            selectedComponents = selectedComponents.filter(c => c !== comp);
+                            isDraggingComponent = null;
+                        } else {
+                            selectedComponents.push(comp);
+                            isDraggingComponent = comp;
+                        }
+                        
+                        if (comp.type === 'input' && selectedComponents.includes(comp)) {
+                            comp.state = !comp.state;
+                            updateLogic();
+                        }
+                    } else {
+                        if (!selectedComponents.includes(comp)) {
+                            selectedComponents = [comp];
+                        }
+                        isDraggingComponent = comp;
+                        
+                        if (comp.type === 'input') {
+                            comp.state = !comp.state;
+                            updateLogic();
+                        }
                     }
-                    isDraggingComponent = comp;
-                    dragStart = { x: world.x - comp.x, y: world.y - comp.y };
+
                     selectedPin = null;
                     selectedWire = null;
                     
-                    if (!selectedComponents.includes(comp)) {
-                        selectedComponents = [comp];
+                    if (isDraggingComponent) {
+                        dragStartWorld = { x: world.x, y: world.y };
+                        dragStartMousePos = { x: screenX, y: screenY };
+                        selectedComponentsInitPos = selectedComponents.map(c => ({ id: c.id, x: c.x, y: c.y }));
+                        componentDragDidMove = false;
                     }
+                    
                     draw();
                     return;
                 }
+            }
+
+            if (e.shiftKey || e.metaKey || e.ctrlKey) {
+                isSelectingBox = true;
+                selectionBoxStart = { x: world.x, y: world.y };
+                selectionBoxEnd = { x: world.x, y: world.y };
+                selectedPin = null;
+                selectedWire = null;
+                draw();
+                return;
             }
 
             isDraggingCanvas = true;
@@ -873,7 +1019,8 @@
                 const pinInfo = comp.getPinAt(world.x, world.y);
                 if (pinInfo) {
                     if (isDraggingPin) {
-                        if (pinInfo.type !== isDraggingPin.type && pinInfo.component !== isDraggingPin.component) {
+                        // Allow connecting to its own pins (e.g. self looping) as long as it isn't Output to Output
+                        if (pinInfo.type !== isDraggingPin.type) {
                             hoveredPin = pinInfo;
                         }
                     } else {
@@ -883,13 +1030,28 @@
                 }
             }
 
-            if (isDraggingCanvas) {
+            if (isSelectingBox) {
+                selectionBoxEnd = { x: world.x, y: world.y };
+                draw();
+            } else if (isDraggingCanvas) {
                 camera.x = e.clientX - dragStart.x;
                 camera.y = e.clientY - dragStart.y;
                 draw();
             } else if (isDraggingComponent) {
-                isDraggingComponent.x = world.x - dragStart.x;
-                isDraggingComponent.y = world.y - dragStart.y;
+                const deltaX = world.x - dragStartWorld.x;
+                const deltaY = world.y - dragStartWorld.y;
+                
+                if (Math.abs(screenX - dragStartMousePos.x) > 3 || Math.abs(screenY - dragStartMousePos.y) > 3) {
+                    componentDragDidMove = true;
+                }
+                
+                selectedComponents.forEach(c => {
+                    const initPos = selectedComponentsInitPos.find(pos => pos.id === c.id);
+                    if (initPos) {
+                        c.x = initPos.x + deltaX;
+                        c.y = initPos.y + deltaY;
+                    }
+                });
                 draw();
             } else if (isDraggingPin) {
                 if (Math.hypot(screenX - dragStartMousePos.x, screenY - dragStartMousePos.y) > 5) {
@@ -907,12 +1069,35 @@
             const screenY = e.clientY - rect.top;
             const world = screenToWorld(screenX, screenY);
 
+            if (isSelectingBox) {
+                const minX = Math.min(selectionBoxStart.x, selectionBoxEnd.x);
+                const maxX = Math.max(selectionBoxStart.x, selectionBoxEnd.x);
+                const minY = Math.min(selectionBoxStart.y, selectionBoxEnd.y);
+                const maxY = Math.max(selectionBoxStart.y, selectionBoxEnd.y);
+                
+                components.forEach(comp => {
+                    const compRight = comp.x + comp.width;
+                    const compBottom = comp.y + comp.height;
+                    
+                    if (comp.x <= maxX && compRight >= minX &&
+                        comp.y <= maxY && compBottom >= minY) {
+                        if (!selectedComponents.includes(comp)) {
+                            selectedComponents.push(comp);
+                        }
+                    }
+                });
+                
+                isSelectingBox = false;
+                draw();
+            }
+
             if (isDraggingPin) {
                 if (pinDragDidMove) {
                     let targetPin = null;
                     for (let comp of components) {
                         const pinInfo = comp.getPinAt(world.x, world.y);
-                        if (pinInfo && pinInfo.type !== isDraggingPin.type && pinInfo.component !== isDraggingPin.component) {
+                        // Allow connecting to its own pins (e.g. self looping)
+                        if (pinInfo && pinInfo.type !== isDraggingPin.type) {
                             targetPin = pinInfo;
                             break;
                         }
@@ -922,12 +1107,19 @@
                         const fromPin = isDraggingPin.type === 'output' ? isDraggingPin : targetPin;
                         const toPin = isDraggingPin.type === 'input' ? isDraggingPin : targetPin;
                         
-                        wires.push({
-                            from: fromPin,
-                            to: toPin
-                        });
-                        toPin.pin.connections.push(fromPin.component);
-                        updateLogic();
+                        // Stop identical redundant wires from being created exactly on top of each other
+                        const wireExists = wires.some(w => w.from.component === fromPin.component && 
+                                                           w.from.pin === fromPin.pin && 
+                                                           w.to.component === toPin.component && 
+                                                           w.to.pin === toPin.pin);
+                        if (!wireExists) {
+                            wires.push({
+                                from: fromPin,
+                                to: toPin
+                            });
+                            toPin.pin.connections.push(fromPin.component);
+                            updateLogic();
+                        }
                     } else {
                         popup.style.left = screenX + 'px';
                         popup.style.top = screenY + 'px';
@@ -943,8 +1135,14 @@
                 hoveredPin = null;
             }
 
+            if (isDraggingComponent) {
+                if (!componentDragDidMove && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+                    selectedComponents = [isDraggingComponent];
+                }
+                isDraggingComponent = null;
+            }
+
             isDraggingCanvas = false;
-            isDraggingComponent = null;
             canvas.classList.remove('grabbing');
             draw();
         });
@@ -1016,7 +1214,6 @@
             btn.addEventListener('click', () => {
                 const type = btn.dataset.type;
                 autoSpawnComponent(type);
-                // Unfocus the button to avoid accidental re-triggers with space/enter while using keyboard shortcuts
                 btn.blur();
             });
         });

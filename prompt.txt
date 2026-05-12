@@ -18,8 +18,15 @@ Here is Current Features We have you don't need to do anything:
 14 select the component and able to delete it with keyboard shortcut (delete key on mac)
 15 using cmd + a to select all component and delete key on mac to delete all selected component
 16 click on bottom center navmenu will auto added selected component to canvas
+17. AND Gate output pin can connect back to it 2 input pin
+18 NOT Gate output pin can connect back to it input pin
+19 the AND GATE or NOT gate output pin connect to it self, we just make it around it self instead of over itself
+20 Make All Wire connectted using Straight lines with rounded corners (Manhattan/Orthogonal Routing)
+21 Allow Selected All or Selected Specific component.
+22 When We selected all or specific component we can drag it and move where ever we want.
 
 Added Features:
+
 
 
 YOU MUST:
