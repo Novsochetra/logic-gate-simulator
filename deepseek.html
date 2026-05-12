@@ -129,6 +129,23 @@
             font-weight: 500;
             z-index: 1000;
         }
+
+        .label-editor {
+            position: fixed;
+            display: none;
+            z-index: 3000;
+            background: #2C2C2E;
+            color: white;
+            border: 2px solid #007AFF;
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-family: sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            outline: none;
+            min-width: 100px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -151,6 +168,10 @@
             NOT Gate
             <span class="shortcut">4</span>
         </button>
+        <button class="nav-item" data-type="label_box">
+            Label Box
+            <span class="shortcut">5</span>
+        </button>
     </div>
 
     <div class="component-popup" id="componentPopup">
@@ -158,19 +179,22 @@
         <div class="popup-item" data-type="output">Output</div>
         <div class="popup-item" data-type="gate">AND Gate</div>
         <div class="popup-item" data-type="not_gate">NOT Gate</div>
+        <div class="popup-item" data-type="label_box">Label Box</div>
     </div>
 
     <div class="zoom-indicator" id="zoomIndicator">100%</div>
+    <input type="text" id="labelEditor" class="label-editor" autocomplete="off" spellcheck="false" />
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const popup = document.getElementById('componentPopup');
         const zoomIndicator = document.getElementById('zoomIndicator');
+        const labelEditor = document.getElementById('labelEditor');
 
         // Canvas state
         let camera = { x: 0, y: 0, zoom: 1 };
-        let components = [];
+        let components =[];
         let wires =[];
         let nextId = 1;
         let dpr = window.devicePixelRatio || 1;
@@ -178,6 +202,8 @@
         // Interaction state
         let isDraggingCanvas = false;
         let isDraggingComponent = null;
+        let isResizingComponent = null;
+        let resizeStart = { w: 0, h: 0 };
         let isDraggingPin = null;
         let dragStart = { x: 0, y: 0 };
         let mousePos = { x: 0, y: 0 };
@@ -188,6 +214,7 @@
         let selectedPin = null;
         let selectedWire = null;
         let selectedComponents =[];
+        let editingComponent = null;
         
         // Track valid pin drags instead of immediate single clicks
         let dragStartMousePos = { x: 0, y: 0 };
@@ -237,7 +264,13 @@
                 this.width = COMPONENT_WIDTH;
                 this.height = COMPONENT_HEIGHT;
                 
-                if (type === 'input') {
+                if (type === 'label_box') {
+                    this.width = 250;
+                    this.height = 180;
+                    this.label = 'Circuit Label';
+                    this.inputs = [];
+                    this.outputs =[];
+                } else if (type === 'input') {
                     this.state = false;
                     this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
                     this.inputs =[];
@@ -262,6 +295,46 @@
             }
 
             draw() {
+                if (this.type === 'label_box') {
+                    ctx.save();
+                    
+                    if (selectedComponents.includes(this)) {
+                        ctx.fillStyle = 'rgba(0, 122, 255, 0.05)';
+                        ctx.strokeStyle = '#007AFF';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([]);
+                    } else {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.015)';
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([6, 6]);
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.roundRect(this.x, this.y, this.width, this.height, 12);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Draw Label Header
+                    ctx.fillStyle = selectedComponents.includes(this) ? '#007AFF' : 'rgba(255, 255, 255, 0.6)';
+                    ctx.font = '600 14px sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(this.label, this.x + 14, this.y + 14);
+                    
+                    // Draw Resize Handle
+                    ctx.fillStyle = selectedComponents.includes(this) ? '#007AFF' : 'rgba(255, 255, 255, 0.2)';
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + this.width - 16, this.y + this.height);
+                    ctx.lineTo(this.x + this.width, this.y + this.height - 16);
+                    ctx.lineTo(this.x + this.width, this.y + this.height);
+                    ctx.fill();
+                    
+                    ctx.restore();
+                    return; // Skip drawing logic gate details
+                }
+
                 ctx.save();
                 
                 if (selectedComponents.includes(this)) {
@@ -439,11 +512,26 @@
             }
 
             containsPoint(x, y) {
+                if (this.type === 'label_box') {
+                    // Only allow selecting/dragging by the header (top 40px) or the thin 10px edges
+                    // This lets clicks inside the large empty body fall through for canvas panning/selection!
+                    const inHeader = x >= this.x && x <= this.x + this.width &&
+                                     y >= this.y && y <= this.y + 40;
+                    
+                    const inBorder = x >= this.x && x <= this.x + this.width &&
+                                     y >= this.y && y <= this.y + this.height &&
+                                     (x <= this.x + 10 || x >= this.x + this.width - 10 || y >= this.y + this.height - 10);
+                                     
+                    return inHeader || inBorder;
+                }
+
                 return x >= this.x && x <= this.x + this.width &&
                        y >= this.y && y <= this.y + this.height;
             }
 
             getPinAt(x, y) {
+                if (this.type === 'label_box') return null;
+
                 for (let pin of this.inputs) {
                     const px = this.x + pin.x;
                     const py = this.y + pin.y;
@@ -459,6 +547,13 @@
                     }
                 }
                 return null;
+            }
+
+            getResizeHandleAt(x, y) {
+                if (this.type !== 'label_box') return false;
+                // Bottom right corner, 20x20 triangle area
+                return x >= this.x + this.width - 20 && x <= this.x + this.width &&
+                       y >= this.y + this.height - 20 && y <= this.y + this.height;
             }
 
             getInputSignal(inputPin) {
@@ -541,15 +636,13 @@
             }
         }
 
-        // Generate orthogonal / straight line points with 90-degree turns
         function getOrthogonalPath(fromX, fromY, toX, toY, isSelfLoop = false) {
             const points =[];
-            const offset = 20; // Distance to push horizontally out of a pin
+            const offset = 20; 
             
             points.push({ x: fromX, y: fromY });
             
             if (isSelfLoop) {
-                // Route neatly above or below the component
                 const loopDir = toY > fromY ? 1 : -1;
                 const loopY = (toY > fromY ? Math.max(fromY, toY) : Math.min(fromY, toY)) + (loopDir * 45);
                 
@@ -559,19 +652,15 @@
                 points.push({ x: toX - offset, y: toY });
             } else {
                 if (fromX + offset < toX - offset) {
-                    // Forward routing
                     const midX = fromX + (toX - fromX) / 2;
                     points.push({ x: midX, y: fromY });
                     points.push({ x: midX, y: toY });
                 } else {
-                    // Backward routing (Requires an S-Shape wrapping around components)
                     const distY = Math.abs(fromY - toY);
                     let routeY;
                     if (distY < 60) {
-                        // Loop beneath if they are directly aligned horizontally
                         routeY = Math.max(fromY, toY) + 60;
                     } else {
-                        // Route perfectly in between them vertically
                         routeY = fromY + (toY - fromY) / 2;
                     }
                     
@@ -586,7 +675,6 @@
             return points;
         }
 
-        // Draw an array of points with nice, smooth rounded corners at every 90-degree turn
         function drawPathWithRoundedCorners(ctx, points, baseRadius) {
             if (points.length === 0) return;
             
@@ -598,7 +686,6 @@
                 const p1 = points[i];
                 const p2 = points[i + 1];
                 
-                // Calculate dynamic radius to prevent arc overlap glitching on very short line segments
                 const d1 = Math.hypot(p1.x - p0.x, p1.y - p0.y);
                 const d2 = Math.hypot(p2.x - p1.x, p2.y - p1.y);
                 const radius = Math.min(baseRadius, d1 / 2, d2 / 2);
@@ -611,7 +698,6 @@
             ctx.stroke();
         }
 
-        // Mathematically calculate minimum distance from a point to a line segment
         function distancePointToSegment(px, py, x1, y1, x2, y2) {
             const A = px - x1;
             const B = py - y1;
@@ -699,7 +785,6 @@
                 }
             });
 
-            // Draw temporary wire while dragging
             if (isDraggingPin && pinDragDidMove) {
                 const fromWorldX = isDraggingPin.component.x + isDraggingPin.pin.x;
                 const fromWorldY = isDraggingPin.component.y + isDraggingPin.pin.y;
@@ -755,7 +840,11 @@
             ctx.translate(camera.x, camera.y);
             ctx.scale(camera.zoom, camera.zoom);
             
-            components.forEach(comp => comp.draw());
+            // Draw background labels/boxes first so they are under logic gates
+            components.filter(c => c.type === 'label_box').forEach(comp => comp.draw());
+            
+            // Draw logic components on top
+            components.filter(c => c.type !== 'label_box').forEach(comp => comp.draw());
             
             if (isSelectingBox) {
                 ctx.fillStyle = 'rgba(0, 122, 255, 0.15)';
@@ -789,11 +878,14 @@
         function autoSpawnComponent(type) {
             const rect = canvas.getBoundingClientRect();
             const world = screenToWorld(rect.width / 2, rect.height / 2);
-            let baseX = world.x - COMPONENT_WIDTH / 2;
-            let baseY = world.y - COMPONENT_HEIGHT / 2;
+            
+            const w = type === 'label_box' ? 250 : COMPONENT_WIDTH;
+            const h = type === 'label_box' ? 180 : COMPONENT_HEIGHT;
+            
+            let baseX = world.x - w / 2;
+            let baseY = world.y - h / 2;
             let offset = 0;
             
-            // Adjust to prevent components from perfectly overlapping on top of each other
             while (components.some(c => Math.abs(c.x - (baseX + offset)) < 5 && Math.abs(c.y - (baseY + offset)) < 5)) {
                 offset += 20;
             }
@@ -828,7 +920,43 @@
             draw();
         }
 
+        function openLabelEditor(comp) {
+            editingComponent = comp;
+            labelEditor.value = comp.label;
+            labelEditor.style.display = 'block';
+            
+            const screenPos = worldToScreen(comp.x + 12, comp.y + 12);
+            
+            labelEditor.style.left = screenPos.x + 'px';
+            labelEditor.style.top = (screenPos.y - 4) + 'px';
+            labelEditor.style.transform = `scale(${camera.zoom})`;
+            labelEditor.style.transformOrigin = 'left top';
+            
+            labelEditor.focus();
+            labelEditor.select();
+        }
+
+        labelEditor.addEventListener('blur', () => {
+            if (editingComponent) {
+                editingComponent.label = labelEditor.value || 'Label';
+                editingComponent = null;
+                labelEditor.style.display = 'none';
+                draw();
+            }
+        });
+
+        labelEditor.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                labelEditor.blur();
+            }
+            e.stopPropagation();
+        });
+
         document.addEventListener('keydown', (e) => {
+            if (document.activeElement === labelEditor) {
+                return; // Let user type freely
+            }
+
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
                 e.preventDefault();
                 selectedComponents = [...components];
@@ -894,6 +1022,8 @@
                 autoSpawnComponent('gate');
             } else if (e.key === '4') {
                 autoSpawnComponent('not_gate');
+            } else if (e.key === '5') {
+                autoSpawnComponent('label_box');
             } else if (e.key === 'Escape') {
                 selectedPin = null;
                 selectedWire = null;
@@ -904,7 +1034,52 @@
             }
         });
 
+        function handleComponentClick(comp, world, screenX, screenY, e) {
+            const isMultiSelectModifier = e.shiftKey || e.metaKey || e.ctrlKey;
+            
+            if (isMultiSelectModifier) {
+                if (selectedComponents.includes(comp)) {
+                    selectedComponents = selectedComponents.filter(c => c !== comp);
+                    isDraggingComponent = null;
+                } else {
+                    selectedComponents.push(comp);
+                    isDraggingComponent = comp;
+                }
+                
+                if (comp.type === 'input' && selectedComponents.includes(comp)) {
+                    comp.state = !comp.state;
+                    updateLogic();
+                }
+            } else {
+                if (!selectedComponents.includes(comp)) {
+                    selectedComponents = [comp];
+                }
+                isDraggingComponent = comp;
+                
+                if (comp.type === 'input') {
+                    comp.state = !comp.state;
+                    updateLogic();
+                }
+            }
+
+            selectedPin = null;
+            selectedWire = null;
+            
+            if (isDraggingComponent) {
+                dragStartWorld = { x: world.x, y: world.y };
+                dragStartMousePos = { x: screenX, y: screenY };
+                selectedComponentsInitPos = selectedComponents.map(c => ({ id: c.id, x: c.x, y: c.y }));
+                componentDragDidMove = false;
+            }
+            
+            draw();
+        }
+
         canvas.addEventListener('mousedown', (e) => {
+            if (document.activeElement === labelEditor && e.target !== labelEditor) {
+                labelEditor.blur();
+            }
+
             if (popupVisible) {
                 return;
             }
@@ -916,6 +1091,7 @@
             
             mousePos = { x: screenX, y: screenY };
 
+            // 1. Check Pins
             for (let comp of [...components].reverse()) {
                 const pinInfo = comp.getPinAt(world.x, world.y);
                 if (pinInfo) {
@@ -931,6 +1107,7 @@
                 }
             }
 
+            // 2. Check Wires
             for (let wire of wires) {
                 if (isPointNearWire(world.x, world.y, wire)) {
                     selectedWire = wire;
@@ -942,50 +1119,41 @@
                 }
             }
 
+            // 3. Check Box Resizing Handles
             for (let comp of [...components].reverse()) {
-                if (comp.containsPoint(world.x, world.y)) {
-                    const isMultiSelectModifier = e.shiftKey || e.metaKey || e.ctrlKey;
-                    
-                    if (isMultiSelectModifier) {
-                        if (selectedComponents.includes(comp)) {
-                            selectedComponents = selectedComponents.filter(c => c !== comp);
-                            isDraggingComponent = null;
-                        } else {
-                            selectedComponents.push(comp);
-                            isDraggingComponent = comp;
-                        }
-                        
-                        if (comp.type === 'input' && selectedComponents.includes(comp)) {
-                            comp.state = !comp.state;
-                            updateLogic();
-                        }
-                    } else {
-                        if (!selectedComponents.includes(comp)) {
-                            selectedComponents = [comp];
-                        }
-                        isDraggingComponent = comp;
-                        
-                        if (comp.type === 'input') {
-                            comp.state = !comp.state;
-                            updateLogic();
-                        }
-                    }
-
+                if (comp.type === 'label_box' && comp.getResizeHandleAt(world.x, world.y)) {
+                    isResizingComponent = comp;
+                    dragStartWorld = { x: world.x, y: world.y };
+                    resizeStart = { w: comp.width, h: comp.height };
                     selectedPin = null;
                     selectedWire = null;
-                    
-                    if (isDraggingComponent) {
-                        dragStartWorld = { x: world.x, y: world.y };
-                        dragStartMousePos = { x: screenX, y: screenY };
-                        selectedComponentsInitPos = selectedComponents.map(c => ({ id: c.id, x: c.x, y: c.y }));
-                        componentDragDidMove = false;
+                    if (!selectedComponents.includes(comp)) {
+                        selectedComponents = [comp];
                     }
-                    
                     draw();
                     return;
                 }
             }
 
+            // 4. Check Logic Components
+            const logicComps = components.filter(c => c.type !== 'label_box');
+            for (let comp of [...logicComps].reverse()) {
+                if (comp.containsPoint(world.x, world.y)) {
+                    handleComponentClick(comp, world, screenX, screenY, e);
+                    return;
+                }
+            }
+
+            // 5. Check Label Boxes background
+            const boxComps = components.filter(c => c.type === 'label_box');
+            for (let comp of [...boxComps].reverse()) {
+                if (comp.containsPoint(world.x, world.y)) {
+                    handleComponentClick(comp, world, screenX, screenY, e);
+                    return;
+                }
+            }
+
+            // 6. Canvas Operations (Box select or Pan)
             if (e.shiftKey || e.metaKey || e.ctrlKey) {
                 isSelectingBox = true;
                 selectionBoxStart = { x: world.x, y: world.y };
@@ -998,7 +1166,6 @@
 
             isDraggingCanvas = true;
             dragStart = { x: e.clientX - camera.x, y: e.clientY - camera.y };
-            canvas.classList.add('grabbing');
             
             selectedPin = null;
             selectedWire = null;
@@ -1014,12 +1181,12 @@
             
             mousePos = { x: screenX, y: screenY };
 
+            // Hover pin checks
             hoveredPin = null;
             for (let comp of components) {
                 const pinInfo = comp.getPinAt(world.x, world.y);
                 if (pinInfo) {
                     if (isDraggingPin) {
-                        // Allow connecting to its own pins (e.g. self looping) as long as it isn't Output to Output
                         if (pinInfo.type !== isDraggingPin.type) {
                             hoveredPin = pinInfo;
                         }
@@ -1030,8 +1197,32 @@
                 }
             }
 
+            // Cursor updates
+            let isHoveringResize = false;
+            for (let comp of components) {
+                if (comp.type === 'label_box' && comp.getResizeHandleAt(world.x, world.y)) {
+                    isHoveringResize = true;
+                    break;
+                }
+            }
+
+            if (isResizingComponent || isHoveringResize) {
+                canvas.style.cursor = 'nwse-resize';
+            } else if (isDraggingCanvas) {
+                canvas.style.cursor = 'grabbing';
+            } else {
+                canvas.style.cursor = 'grab';
+            }
+
+            // Drag operations
             if (isSelectingBox) {
                 selectionBoxEnd = { x: world.x, y: world.y };
+                draw();
+            } else if (isResizingComponent) {
+                const newWidth = Math.max(100, resizeStart.w + (world.x - dragStartWorld.x));
+                const newHeight = Math.max(60, resizeStart.h + (world.y - dragStartWorld.y));
+                isResizingComponent.width = newWidth;
+                isResizingComponent.height = newHeight;
                 draw();
             } else if (isDraggingCanvas) {
                 camera.x = e.clientX - dragStart.x;
@@ -1058,7 +1249,7 @@
                     pinDragDidMove = true;
                 }
                 draw();
-            } else if (hoveredPin) {
+            } else {
                 draw();
             }
         });
@@ -1096,7 +1287,6 @@
                     let targetPin = null;
                     for (let comp of components) {
                         const pinInfo = comp.getPinAt(world.x, world.y);
-                        // Allow connecting to its own pins (e.g. self looping)
                         if (pinInfo && pinInfo.type !== isDraggingPin.type) {
                             targetPin = pinInfo;
                             break;
@@ -1107,7 +1297,6 @@
                         const fromPin = isDraggingPin.type === 'output' ? isDraggingPin : targetPin;
                         const toPin = isDraggingPin.type === 'input' ? isDraggingPin : targetPin;
                         
-                        // Stop identical redundant wires from being created exactly on top of each other
                         const wireExists = wires.some(w => w.from.component === fromPin.component && 
                                                            w.from.pin === fromPin.pin && 
                                                            w.to.component === toPin.component && 
@@ -1142,13 +1331,32 @@
                 isDraggingComponent = null;
             }
 
+            isResizingComponent = null;
             isDraggingCanvas = false;
-            canvas.classList.remove('grabbing');
+            canvas.style.cursor = '';
             draw();
+        });
+
+        canvas.addEventListener('dblclick', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+            const world = screenToWorld(screenX, screenY);
+            
+            for (let comp of [...components].reverse()) {
+                if (comp.type === 'label_box' && comp.containsPoint(world.x, world.y)) {
+                    openLabelEditor(comp);
+                    return;
+                }
+            }
         });
 
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
+            
+            if (document.activeElement === labelEditor) {
+                labelEditor.blur();
+            }
             
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
@@ -1226,7 +1434,6 @@
             item.addEventListener('click', selectPopupItem);
         });
 
-        // Close popup on outside mousedown to bypass immediate event triggering bugs
         document.addEventListener('mousedown', (e) => {
             if (popupVisible && !popup.contains(e.target)) {
                 popup.classList.remove('show');
