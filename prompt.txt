@@ -1,0 +1,19 @@
+features: 
+
+* drag input anywhere in the screen
+* infinite canvas 
+* can use track pad on mac to zoom in / out on canvas
+* the canvas should has grid display for better virtuilize
+* float  nav of component at the bottom center which contain (input, output, gate)
+   * each nav menu has it own short cut key (key 1 for input, key 2 for output, key 3 for gate)
+* on each pin of component we can drag it and connect to other pin of other component
+* if i drag on pin of component one and release on the empty canvas it should display the popup which contain the list of component (input, output, gate) then i can use keyboard for navigation (arrow up / down) and use key enter to select the new component and auto connected with the previous connector
+* ui of each gate make it like toggle on ios button but with square instead of circle and rounded radius.
+
+please added the new features:
+
+* when drag over other pin added virutlize effect to let user know the pin we can drop on.
+* each pin we can select on and added virtualize effect on it then we can use keyboard shortcut(delete key on mac to delete the wire) on select pin
+* also we can select on wire with the same virtual effect and use delete key to delete the wire. 
+
+make it work and make no mistake, because full with my requirement bro. don't modify other functionality and make no mistake.

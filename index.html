@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>⚡ logic gate simulator · infinite canvas</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #0a0a14;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #toolbar {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      background: rgba(15, 15, 28, 0.9);
+      backdrop-filter: blur(24px);
+      padding: 8px 16px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+      z-index: 100;
+      border: 1px solid rgba(255,255,255,0.12);
+      flex-wrap: wrap;
+    }
+    .tool-btn {
+      background: #1a1a2e;
+      border: none;
+      color: #aaa;
+      font-weight: 500;
+      font-size: 0.8rem;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .tool-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+    .tool-btn:hover {
+      background: #2a2a44;
+      color: #ddd;
+      border-color: rgba(255,255,255,0.2);
+    }
+    .tool-btn.active {
+      background: #4a3fcf;
+      color: white;
+      border-color: #8b7fff;
+      box-shadow: 0 0 16px #5b4fcf;
+    }
+    .shortcut {
+      font-size: 0.65rem;
+      background: rgba(255,255,255,0.1);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      cursor: grab;
+    }
+    #canvas-container.grabbing {
+      cursor: grabbing;
+    }
+    #canvas-container.wire-dragging {
+      cursor: crosshair;
+    }
+    .help-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15,15,28,0.85);
+      backdrop-filter: blur(16px);
+      color: #888;
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      border: 1px solid #333;
+      z-index: 90;
+      display: flex;
+      gap: 18px;
+    }
+    .help-bar span {
+      color: #b7aefb;
+      font-weight: 600;
+    }
+    .zoom-indicator {
+      position: fixed;
+      bottom: 60px;
+      right: 20px;
+      background: rgba(15,15,28,0.8);
+      color: #ccc;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      z-index: 90;
+    }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button id="btn-input" class="tool-btn" title="Input node (I)">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="0" stroke="currentColor" stroke-width="2.5"/><text x="12" y="17" text-anchor="middle" fill="currentColor" font-size="12" font-weight="bold">IN</text></svg> Input <span class="shortcut">I</span>
+    </button>
+    <button id="btn-output" class="tool-btn" title="Output light (O)">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="0" stroke="currentColor" stroke-width="2.5"/><text x="12" y="17" text-anchor="middle" fill="currentColor" font-size="11" font-weight="bold">OUT</text></svg> Output <span class="shortcut">O</span>
+    </button>
+    <button id="btn-and" class="tool-btn" title="AND Gate (A)">
+      <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="0" stroke="currentColor" stroke-width="2.2"/><text x="12" y="16" text-anchor="middle" fill="currentColor" font-size="13" font-weight="bold">&</text></svg> AND <span class="shortcut">A</span>
+    </button>
+    <button id="btn-or" class="tool-btn" title="OR Gate (R)">
+      <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="0" stroke="currentColor" stroke-width="2.2"/><text x="12" y="16" text-anchor="middle" fill="currentColor" font-size="12" font-weight="bold">≥1</text></svg> OR <span class="shortcut">R</span>
+    </button>
+    <button id="btn-not" class="tool-btn" title="NOT Gate (N)">
+      <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="0" stroke="currentColor" stroke-width="2.2"/><text x="12" y="16" text-anchor="middle" fill="currentColor" font-size="11">NOT</text></svg> NOT <span class="shortcut">N</span>
+    </button>
+    <button id="btn-wire" class="tool-btn active" title="Drag from output pin to connect">
+      <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="2.5"/><circle cx="4" cy="20" r="2.5" fill="currentColor"/><circle cx="20" cy="4" r="2.5" fill="currentColor"/></svg> Connect <span class="shortcut">W</span>
+    </button>
+  </div>
+
+  <div id="canvas-container"></div>
+  <div class="zoom-indicator" id="zoom-level">100%</div>
+
+  <div class="help-bar">
+    <div>🖱️ <span>drag canvas</span> · <span>pinch/trackpad</span> zoom</div>
+    <div>🔗 <span>drag from ● output pin</span> to connect</div>
+    <div>🔄 <span>double-click input</span> toggle</div>
+    <div>⌨️ <span>I O A R N W</span> · <span>⌘A Del</span> all</div>
+  </div>
+
+  <script>
+    (() => {
+      const container = document.getElementById('canvas-container');
+      const zoomIndicator = document.getElementById('zoom-level');
+      
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", "100%");
+      svg.setAttribute("height", "100%");
+      svg.style.position = "absolute";
+      svg.style.top = "0";
+      svg.style.left = "0";
+      container.appendChild(svg);
+
+      const mainGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      svg.appendChild(mainGroup);
+
+      // Grid pattern
+      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+      const pattern = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+      pattern.setAttribute("id", "grid");
+      pattern.setAttribute("width", "60");
+      pattern.setAttribute("height", "60");
+      pattern.setAttribute("patternUnits", "userSpaceOnUse");
+      const gridPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      gridPath.setAttribute("d", "M 60 0 L 0 0 0 60");
+      gridPath.setAttribute("fill", "none");
+      gridPath.setAttribute("stroke", "rgba(255,255,255,0.04)");
+      gridPath.setAttribute("stroke-width", "1");
+      pattern.appendChild(gridPath);
+      defs.appendChild(pattern);
+      svg.appendChild(defs);
+      
+      const gridRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      gridRect.setAttribute("x", "-10000");
+      gridRect.setAttribute("y", "-10000");
+      gridRect.setAttribute("width", "20000");
+      gridRect.setAttribute("height", "20000");
+      gridRect.setAttribute("fill", "url(#grid)");
+      mainGroup.appendChild(gridRect);
+
+      // State
+      let currentTool = 'wire'; // wire mode is default for direct pin dragging
+      let elements = [];
+      let wires = [];
+      let selectedElementIds = new Set();
+      
+      // Pin dragging state (for direct connection)
+      let pinDragStart = null; // { elementId, portType, clientX, clientY }
+      let tempWireEnd = null;
+      
+      // Pan/Zoom
+      let isPanning = false;
+      let panStart = { x: 0, y: 0 };
+      let groupTransform = { x: 0, y: 0 };
+      let scale = 1;
+      
+      // Element dragging
+      let isDraggingElement = false;
+      let dragElementId = null;
+      let dragOffset = { x: 0, y: 0 };
+      
+      let nextId = 1;
+
+      function updateTransform() {
+        mainGroup.setAttribute("transform", `translate(${groupTransform.x},${groupTransform.y}) scale(${scale})`);
+        zoomIndicator.textContent = Math.round(scale * 100) + '%';
+      }
+
+      function createElement(type, x, y) {
+        return { id: nextId++, type, x, y, value: (type==='input'?0:0), state:0 };
+      }
+
+      function getPortPosition(el, portType) {
+        const size = 22;
+        if (el.type === 'input') return { x: el.x + size, y: el.y };
+        if (el.type === 'output') return { x: el.x - size, y: el.y };
+        if (el.type === 'and' || el.type === 'or') return portType==='output' ? {x: el.x+30, y: el.y} : {x: el.x-30, y: el.y};
+        if (el.type === 'not') return portType==='output' ? {x: el.x+26, y: el.y} : {x: el.x-26, y: el.y};
+        return {x: el.x, y: el.y};
+      }
+
+      function getElementState(el) {
+        if (el.type === 'input') return el.value;
+        const inputs = wires.filter(w => w.toElement === el.id).map(w => {
+          const src = elements.find(e=>e.id===w.fromElement);
+          return src ? getElementState(src) : 0;
+        });
+        if (el.type === 'output') return inputs[0] ?? 0;
+        if (el.type === 'and') return inputs.length ? (inputs.every(v=>v===1)?1:0) : 0;
+        if (el.type === 'or') return inputs.length ? (inputs.some(v=>v===1)?1:0) : 0;
+        if (el.type === 'not') return inputs.length ? (inputs[0]===1?0:1) : 1;
+        return 0;
+      }
+
+      function evaluateCircuit() {
+        elements.forEach(el => { if (el.type !== 'input') el.state = getElementState(el); });
+      }
+
+      function isOutputPin(el, point) {
+        const pos = getPortPosition(el, 'output');
+        const dx = point.x - pos.x;
+        const dy = point.y - pos.y;
+        return Math.sqrt(dx*dx + dy*dy) < 14;
+      }
+
+      function isInputPin(el, point) {
+        if (el.type === 'input') return false;
+        const pos = getPortPosition(el, 'input');
+        const dx = point.x - pos.x;
+        const dy = point.y - pos.y;
+        return Math.sqrt(dx*dx + dy*dy) < 14;
+      }
+
+      function getElementAtPoint(point) {
+        for (let i = elements.length-1; i >= 0; i--) {
+          const el = elements[i];
+          const dx = point.x - el.x;
+          const dy = point.y - el.y;
+          if (Math.abs(dx) < 26 && Math.abs(dy) < 26) return el;
+        }
+        return null;
+      }
+
+      function renderAll() {
+        const existing = mainGroup.querySelectorAll('.element-group, .wire-group');
+        existing.forEach(g=>g.remove());
+        
+        const wireGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        wireGroup.classList.add("wire-group");
+        mainGroup.appendChild(wireGroup);
+        
+        wires.forEach(wire => {
+          const fromEl = elements.find(e=>e.id===wire.fromElement);
+          const toEl = elements.find(e=>e.id===wire.toElement);
+          if (!fromEl || !toEl) return;
+          const p1 = getPortPosition(fromEl, 'output');
+          const p2 = getPortPosition(toEl, 'input');
+          const val = getElementState(fromEl);
+          const color = val === 1 ? '#4ade80' : '#f87171';
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("x1", p1.x); line.setAttribute("y1", p1.y);
+          line.setAttribute("x2", p2.x); line.setAttribute("y2", p2.y);
+          line.setAttribute("stroke", color);
+          line.setAttribute("stroke-width", "3");
+          line.setAttribute("stroke-linecap", "round");
+          line.style.pointerEvents = "stroke";
+          line.style.cursor = "pointer";
+          line.dataset.wireId = wire.id;
+          line.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (e.metaKey || e.ctrlKey) {
+              wires = wires.filter(w=>w.id!==wire.id);
+              evaluateCircuit();
+              renderAll();
+            }
+          });
+          wireGroup.appendChild(line);
+        });
+        
+        if (pinDragStart && tempWireEnd) {
+          const startEl = elements.find(e=>e.id===pinDragStart.elementId);
+          if (startEl) {
+            const p1 = getPortPosition(startEl, pinDragStart.portType);
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", p1.x); line.setAttribute("y1", p1.y);
+            line.setAttribute("x2", tempWireEnd.x); line.setAttribute("y2", tempWireEnd.y);
+            line.setAttribute("stroke", "#fbbf24");
+            line.setAttribute("stroke-width", "3");
+            line.setAttribute("stroke-dasharray", "8 4");
+            wireGroup.appendChild(line);
+          }
+        }
+        
+        const elemGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        elemGroup.classList.add("element-group");
+        mainGroup.appendChild(elemGroup);
+        
+        elements.forEach(el => {
+          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          g.setAttribute("transform", `translate(${el.x},${el.y})`);
+          g.dataset.elementId = el.id;
+          
+          drawElement(g, el);
+          
+          // Output pin (always visible, draggable)
+          const outPos = getPortPosition(el, 'output');
+          const outPin = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          outPin.setAttribute("cx", outPos.x - el.x);
+          outPin.setAttribute("cy", outPos.y - el.y);
+          outPin.setAttribute("r", "7");
+          outPin.setAttribute("fill", "#fbbf24");
+          outPin.setAttribute("stroke", "#000");
+          outPin.setAttribute("stroke-width", "1.5");
+          outPin.style.cursor = "crosshair";
+          outPin.classList.add("output-pin");
+          outPin.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            startPinDrag(el.id, 'output', e);
+          });
+          g.appendChild(outPin);
+          
+          // Input pin for gates/output
+          if (el.type !== 'input') {
+            const inPos = getPortPosition(el, 'input');
+            const inPin = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            inPin.setAttribute("cx", inPos.x - el.x);
+            inPin.setAttribute("cy", inPos.y - el.y);
+            inPin.setAttribute("r", "7");
+            inPin.setAttribute("fill", "#60a5fa");
+            inPin.setAttribute("stroke", "#000");
+            inPin.setAttribute("stroke-width", "1.5");
+            inPin.style.cursor = "crosshair";
+            inPin.classList.add("input-pin");
+            inPin.addEventListener('mouseup', (e) => {
+              e.stopPropagation();
+              if (pinDragStart && pinDragStart.portType === 'output') {
+                finishPinDrag(el.id, 'input');
+              }
+            });
+            g.appendChild(inPin);
+          }
+          
+          // Selection highlight
+          if (selectedElementIds.has(el.id)) {
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rect.setAttribute("x", "-32"); rect.setAttribute("y", "-32");
+            rect.setAttribute("width", "64"); rect.setAttribute("height", "64");
+            rect.setAttribute("fill", "none"); rect.setAttribute("stroke", "#fbbf24");
+            rect.setAttribute("stroke-width", "2.5"); rect.setAttribute("rx", "0");
+            rect.setAttribute("pointer-events", "none");
+            g.appendChild(rect);
+          }
+          
+          g.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('output-pin') || e.target.classList.contains('input-pin')) return;
+            e.stopPropagation();
+            if (e.metaKey || e.ctrlKey) {
+              if (selectedElementIds.has(el.id)) selectedElementIds.delete(el.id);
+              else selectedElementIds.add(el.id);
+              renderAll();
+            } else {
+              selectedElementIds.clear();
+              selectedElementIds.add(el.id);
+              isDraggingElement = true;
+              dragElementId = el.id;
+              const pos = getSVGPoint(e);
+              dragOffset = { x: pos.x - el.x, y: pos.y - el.y };
+              renderAll();
+            }
+          });
+          
+          g.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            if (el.type === 'input') toggleInput(el.id);
+          });
+          
+          g.addEventListener('mouseup', (e) => {
+            if (pinDragStart && pinDragStart.portType === 'output' && el.type !== 'input') {
+              finishPinDrag(el.id, 'input');
+            }
+          });
+          
+          elemGroup.appendChild(g);
+        });
+      }
+
+      function drawElement(g, el) {
+        // iOS toggle style: square with no border radius, dark background
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", "-24"); rect.setAttribute("y", "-20");
+        rect.setAttribute("width", "48"); rect.setAttribute("height", "40");
+        rect.setAttribute("rx", "0"); // No border radius
+        rect.setAttribute("fill", "#1e1e30");
+        rect.setAttribute("stroke", "#444");
+        rect.setAttribute("stroke-width", "2");
+        g.appendChild(rect);
+        
+        if (el.type === 'input') {
+          const fill = el.value ? '#4ade80' : '#3f3f5c';
+          const inner = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          inner.setAttribute("x", "-18"); inner.setAttribute("y", "-14");
+          inner.setAttribute("width", "36"); inner.setAttribute("height", "28");
+          inner.setAttribute("rx", "0");
+          inner.setAttribute("fill", fill);
+          g.appendChild(inner);
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dy", "5");
+          text.setAttribute("fill", "white"); text.setAttribute("font-weight", "bold");
+          text.setAttribute("font-size", "14");
+          text.textContent = el.value ? "1" : "0";
+          g.appendChild(text);
+        } else if (el.type === 'output') {
+          const fill = el.state ? '#f97316' : '#3f3f5c';
+          const inner = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          inner.setAttribute("x", "-18"); inner.setAttribute("y", "-14");
+          inner.setAttribute("width", "36"); inner.setAttribute("height", "28");
+          inner.setAttribute("rx", "0");
+          inner.setAttribute("fill", fill);
+          g.appendChild(inner);
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dy", "5");
+          text.setAttribute("fill", "white"); text.setAttribute("font-size", "13");
+          text.textContent = el.state ? "1" : "0";
+          g.appendChild(text);
+        } else if (el.type === 'and') {
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dy", "5");
+          text.setAttribute("fill", "#93c5fd"); text.setAttribute("font-weight", "bold");
+          text.setAttribute("font-size", "16"); text.textContent = "&";
+          g.appendChild(text);
+        } else if (el.type === 'or') {
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dy", "5");
+          text.setAttribute("fill", "#c4b5fd"); text.setAttribute("font-weight", "bold");
+          text.setAttribute("font-size", "14"); text.textContent = "≥1";
+          g.appendChild(text);
+        } else if (el.type === 'not') {
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dy", "5");
+          text.setAttribute("fill", "#fca5a5"); text.setAttribute("font-weight", "bold");
+          text.setAttribute("font-size", "13"); text.textContent = "NOT";
+          g.appendChild(text);
+        }
+      }
+
+      function startPinDrag(elementId, portType, e) {
+        pinDragStart = {
+          elementId,
+          portType,
+          clientX: e.clientX,
+          clientY: e.clientY
+        };
+        tempWireEnd = getSVGPoint(e);
+        container.classList.add('wire-dragging');
+        renderAll();
+      }
+
+      function finishPinDrag(targetElementId, targetPortType) {
+        if (!pinDragStart) return;
+        if (pinDragStart.elementId === targetElementId) {
+          cancelPinDrag();
+          return;
+        }
+        if (pinDragStart.portType === 'output' && targetPortType === 'input') {
+          const exists = wires.some(w => w.fromElement === pinDragStart.elementId && w.toElement === targetElementId);
+          if (!exists) {
+            wires.push({ id: nextId++, fromElement: pinDragStart.elementId, toElement: targetElementId });
+            evaluateCircuit();
+          }
+        }
+        cancelPinDrag();
+        renderAll();
+      }
+
+      function cancelPinDrag() {
+        pinDragStart = null;
+        tempWireEnd = null;
+        container.classList.remove('wire-dragging');
+      }
+
+      function getSVGPoint(e) {
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        return pt.matrixTransform(svg.getScreenCTM().inverse());
+      }
+
+      function toggleInput(id) {
+        const el = elements.find(e=>e.id===id);
+        if (el && el.type==='input') {
+          el.value = el.value ? 0 : 1;
+          evaluateCircuit();
+          renderAll();
+        }
+      }
+
+      // Canvas pan/zoom events
+      svg.addEventListener('mousedown', (e) => {
+        if (e.target === svg || e.target === gridRect) {
+          isPanning = true;
+          panStart = { x: e.clientX, y: e.clientY };
+          container.classList.add('grabbing');
+          selectedElementIds.clear();
+          renderAll();
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (isPanning) {
+          const dx = e.clientX - panStart.x;
+          const dy = e.clientY - panStart.y;
+          groupTransform.x += dx;
+          groupTransform.y += dy;
+          panStart = { x: e.clientX, y: e.clientY };
+          updateTransform();
+        }
+        if (isDraggingElement && dragElementId) {
+          const pos = getSVGPoint(e);
+          const el = elements.find(e=>e.id===dragElementId);
+          if (el) {
+            el.x = pos.x - dragOffset.x;
+            el.y = pos.y - dragOffset.y;
+            renderAll();
+          }
+        }
+        if (pinDragStart) {
+          tempWireEnd = getSVGPoint(e);
+          renderAll();
+        }
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        if (isPanning) {
+          isPanning = false;
+          container.classList.remove('grabbing');
+        }
+        if (isDraggingElement) {
+          isDraggingElement = false;
+          dragElementId = null;
+        }
+        if (pinDragStart && !e.target.closest('.input-pin')) {
+          cancelPinDrag();
+          renderAll();
+        }
+      });
+
+      // Trackpad zoom
+      svg.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        const newScale = Math.min(3, Math.max(0.2, scale * delta));
+        
+        const mousePoint = getSVGPoint(e);
+        const worldX = (mousePoint.x - groupTransform.x) / scale;
+        const worldY = (mousePoint.y - groupTransform.y) / scale;
+        
+        scale = newScale;
+        groupTransform.x = mousePoint.x - worldX * scale;
+        groupTransform.y = mousePoint.y - worldY * scale;
+        
+        updateTransform();
+      }, { passive: false });
+
+      // Click to place elements
+      svg.addEventListener('click', (e) => {
+        if (isPanning || isDraggingElement) return;
+        if (e.target === svg || e.target === gridRect) {
+          if (currentTool !== 'wire') {
+            const pos = getSVGPoint(e);
+            elements.push(createElement(currentTool, pos.x, pos.y));
+            evaluateCircuit();
+            renderAll();
+          }
+          selectedElementIds.clear();
+          renderAll();
+        }
+      });
+
+      // Keyboard shortcuts
+      window.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        const meta = e.metaKey || e.ctrlKey;
+        
+        if (meta && key === 'a') {
+          e.preventDefault();
+          selectedElementIds = new Set(elements.map(el => el.id));
+          renderAll();
+        }
+        if ((key === 'delete' || key === 'backspace') && selectedElementIds.size > 0) {
+          e.preventDefault();
+          elements = elements.filter(el => !selectedElementIds.has(el.id));
+          wires = wires.filter(w => !selectedElementIds.has(w.fromElement) && !selectedElementIds.has(w.toElement));
+          selectedElementIds.clear();
+          evaluateCircuit();
+          renderAll();
+        }
+        if (key === 'i') { currentTool = 'input'; updateToolUI(); e.preventDefault(); }
+        if (key === 'o') { currentTool = 'output'; updateToolUI(); e.preventDefault(); }
+        if (key === 'a' && !meta) { currentTool = 'and'; updateToolUI(); e.preventDefault(); }
+        if (key === 'r') { currentTool = 'or'; updateToolUI(); e.preventDefault(); }
+        if (key === 'n') { currentTool = 'not'; updateToolUI(); e.preventDefault(); }
+        if (key === 'w') { currentTool = 'wire'; updateToolUI(); e.preventDefault(); }
+        if (key === 'escape') {
+          cancelPinDrag();
+          selectedElementIds.clear();
+          renderAll();
+        }
+      });
+
+      function updateToolUI() {
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        const map = {input:'btn-input', output:'btn-output', and:'btn-and', or:'btn-or', not:'btn-not', wire:'btn-wire'};
+        if (map[currentTool]) document.getElementById(map[currentTool]).classList.add('active');
+      }
+
+      document.getElementById('btn-input').addEventListener('click', ()=>{ currentTool='input'; updateToolUI(); });
+      document.getElementById('btn-output').addEventListener('click', ()=>{ currentTool='output'; updateToolUI(); });
+      document.getElementById('btn-and').addEventListener('click', ()=>{ currentTool='and'; updateToolUI(); });
+      document.getElementById('btn-or').addEventListener('click', ()=>{ currentTool='or'; updateToolUI(); });
+      document.getElementById('btn-not').addEventListener('click', ()=>{ currentTool='not'; updateToolUI(); });
+      document.getElementById('btn-wire').addEventListener('click', ()=>{ currentTool='wire'; updateToolUI(); });
+
+      // Demo
+      elements.push(createElement('input', -200, -60));
+      elements.push(createElement('input', -200, 60));
+      elements.push(createElement('and', 0, 0));
+      elements.push(createElement('output', 200, 0));
+      wires.push({id: nextId++, fromElement:1, toElement:3});
+      wires.push({id: nextId++, fromElement:2, toElement:3});
+      wires.push({id: nextId++, fromElement:3, toElement:4});
+      
+      evaluateCircuit();
+      updateTransform();
+      updateToolUI();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
