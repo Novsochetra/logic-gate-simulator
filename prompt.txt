@@ -17,6 +17,7 @@ Here is Current Features We have you don't need to do anything:
 13 make sure the gate logic when connected with other component is correct
 14 select the component and able to delete it with keyboard shortcut (delete key on mac)
 15 using cmd + a to select all component and delete key on mac to delete all selected component
+16 click on bottom center navmenu will auto added selected component to canvas
 
 Added Features:
 

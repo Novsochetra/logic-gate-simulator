@@ -59,6 +59,7 @@
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
+            outline: none;
         }
 
         .nav-item:hover {
@@ -146,12 +147,17 @@
             Gate
             <span class="shortcut">3</span>
         </button>
+        <button class="nav-item" data-type="not_gate">
+            NOT Gate
+            <span class="shortcut">4</span>
+        </button>
     </div>
 
     <div class="component-popup" id="componentPopup">
         <div class="popup-item" data-type="input">Input</div>
         <div class="popup-item" data-type="output">Output</div>
-        <div class="popup-item" data-type="gate">Gate</div>
+        <div class="popup-item" data-type="gate">AND Gate</div>
+        <div class="popup-item" data-type="not_gate">NOT Gate</div>
     </div>
 
     <div class="zoom-indicator" id="zoomIndicator">100%</div>
@@ -238,6 +244,12 @@
                         { x: 0, y: this.height * 0.7, connections:[] }
                     ];
                     this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
+                } else if (type === 'not_gate') {
+                    this.state = true;
+                    this.inputs = [
+                        { x: 0, y: this.height / 2, connections: [] }
+                    ];
+                    this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
                 }
             }
 
@@ -314,7 +326,7 @@
                         ctx.fill();
                     }
                     
-                } else if (this.type === 'gate') {
+                } else if (this.type === 'gate' || this.type === 'not_gate') {
                     // Rounded rectangle chip style
                     const chipWidth = 65;
                     const chipHeight = 40;
@@ -330,12 +342,13 @@
                     ctx.fill();
                     ctx.stroke();
                     
-                    // AND gate symbol
+                    // Gate symbol
                     ctx.fillStyle = this.state ? 'white' : '#8E8E93';
                     ctx.font = 'bold 14px monospace';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText('AND', this.x + this.width / 2, this.y + this.height / 2);
+                    const text = this.type === 'gate' ? 'AND' : 'NOT';
+                    ctx.fillText(text, this.x + this.width / 2, this.y + this.height / 2);
                 }
                 
                 // Draw pins
@@ -463,6 +476,9 @@
                     const input1 = this.inputs.length > 0 ? this.getInputSignal(this.inputs[0]) : false;
                     const input2 = this.inputs.length > 1 ? this.getInputSignal(this.inputs[1]) : false;
                     this.state = input1 && input2;
+                } else if (this.type === 'not_gate') {
+                    const input1 = this.inputs.length > 0 ? this.getInputSignal(this.inputs[0]) : false;
+                    this.state = !input1;
                 }
             }
         }
@@ -654,9 +670,49 @@
             return comp;
         }
 
+        function autoSpawnComponent(type) {
+            const rect = canvas.getBoundingClientRect();
+            const world = screenToWorld(rect.width / 2, rect.height / 2);
+            let baseX = world.x - COMPONENT_WIDTH / 2;
+            let baseY = world.y - COMPONENT_HEIGHT / 2;
+            let offset = 0;
+            
+            // Adjust to prevent components from perfectly overlapping on top of each other
+            while (components.some(c => Math.abs(c.x - (baseX + offset)) < 5 && Math.abs(c.y - (baseY + offset)) < 5)) {
+                offset += 20;
+            }
+            
+            createComponent(type, baseX + offset, baseY + offset);
+            draw();
+        }
+
         function updateLogic() {
-            components.filter(c => c.type === 'gate').forEach(comp => comp.updateState());
-            components.filter(c => c.type === 'output').forEach(comp => comp.updateState());
+            // Evaluates circuit logic repeatedly until changes ripple completely through the system
+            let changed = true;
+            let attempts = 0;
+            const maxAttempts = 1000; // Safeguard to prevent freezing loop on logic cycles (e.g., feedback loops)
+
+            while (changed && attempts < maxAttempts) {
+                changed = false;
+                
+                // Snapshot the current state of every component BEFORE this iteration runs
+                const prevStates = new Map();
+                components.forEach(c => prevStates.set(c.id, c.state));
+                
+                // Perform state evaluations
+                components.filter(c => c.type === 'gate' || c.type === 'not_gate').forEach(comp => comp.updateState());
+                components.filter(c => c.type === 'output').forEach(comp => comp.updateState());
+                
+                // Compare and check if any component changed during this loop
+                components.forEach(c => {
+                    if (c.state !== prevStates.get(c.id)) {
+                        changed = true; // Still propagating, run it again!
+                    }
+                });
+                
+                attempts++;
+            }
+            
             draw();
         }
 
@@ -699,11 +755,13 @@
             if (popupVisible) {
                 if (e.key === 'ArrowDown') {
                     e.preventDefault();
-                    popupSelectedIndex = (popupSelectedIndex + 1) % 3;
+                    const itemsCount = popup.querySelectorAll('.popup-item').length;
+                    popupSelectedIndex = (popupSelectedIndex + 1) % itemsCount;
                     updatePopupSelection();
                 } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
-                    popupSelectedIndex = (popupSelectedIndex - 1 + 3) % 3;
+                    const itemsCount = popup.querySelectorAll('.popup-item').length;
+                    popupSelectedIndex = (popupSelectedIndex - 1 + itemsCount) % itemsCount;
                     updatePopupSelection();
                 } else if (e.key === 'Enter') {
                     e.preventDefault();
@@ -716,20 +774,14 @@
                 return;
             }
 
-            const rect = canvas.getBoundingClientRect();
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            const world = screenToWorld(centerX, centerY);
-
             if (e.key === '1') {
-                createComponent('input', world.x, world.y);
-                draw();
+                autoSpawnComponent('input');
             } else if (e.key === '2') {
-                createComponent('output', world.x, world.y);
-                draw();
+                autoSpawnComponent('output');
             } else if (e.key === '3') {
-                createComponent('gate', world.x, world.y);
-                draw();
+                autoSpawnComponent('gate');
+            } else if (e.key === '4') {
+                autoSpawnComponent('not_gate');
             } else if (e.key === 'Escape') {
                 selectedPin = null;
                 selectedWire = null;
@@ -963,12 +1015,9 @@
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', () => {
                 const type = btn.dataset.type;
-                const rect = canvas.getBoundingClientRect();
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const world = screenToWorld(centerX, centerY);
-                createComponent(type, world.x, world.y);
-                draw();
+                autoSpawnComponent(type);
+                // Unfocus the button to avoid accidental re-triggers with space/enter while using keyboard shortcuts
+                btn.blur();
             });
         });
 
