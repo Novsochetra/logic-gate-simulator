@@ -71,6 +71,26 @@
             transform: translateY(0);
         }
 
+        .nav-item.active {
+            background: #007AFF;
+        }
+
+        .nav-item.active:hover {
+            background: #0066CC;
+        }
+
+        .nav-item.active .shortcut {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .nav-divider {
+            width: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1px;
+            margin: 0 4px;
+            flex-shrink: 0;
+        }
+
         .nav-item .shortcut {
             position: absolute;
             top: -8px;
@@ -152,6 +172,15 @@
     <canvas id="canvas"></canvas>
     
     <div class="nav-bar">
+        <button class="nav-item active" id="modePan">
+            Pan Mode
+            <span class="shortcut">V</span>
+        </button>
+        <button class="nav-item" id="modeSelect">
+            Select Mode
+            <span class="shortcut">S</span>
+        </button>
+        <div class="nav-divider"></div>
         <button class="nav-item" data-type="input">
             Input
             <span class="shortcut">1</span>
@@ -200,6 +229,7 @@
         let dpr = window.devicePixelRatio || 1;
 
         // Interaction state
+        let isSelectMode = false;
         let isDraggingCanvas = false;
         let isDraggingComponent = null;
         let isResizingComponent = null;
@@ -957,6 +987,20 @@
                 return; // Let user type freely
             }
 
+            if (e.key.toLowerCase() === 'v') {
+                isSelectMode = false;
+                updateModeUI();
+                draw();
+                return;
+            }
+
+            if (e.key.toLowerCase() === 's') {
+                isSelectMode = true;
+                updateModeUI();
+                draw();
+                return;
+            }
+
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
                 e.preventDefault();
                 selectedComponents = [...components];
@@ -1154,12 +1198,15 @@
             }
 
             // 6. Canvas Operations (Box select or Pan)
-            if (e.shiftKey || e.metaKey || e.ctrlKey) {
+            if (isSelectMode || e.shiftKey || e.metaKey || e.ctrlKey) {
                 isSelectingBox = true;
                 selectionBoxStart = { x: world.x, y: world.y };
                 selectionBoxEnd = { x: world.x, y: world.y };
                 selectedPin = null;
                 selectedWire = null;
+                if (!e.shiftKey && !e.metaKey && !e.ctrlKey) {
+                    selectedComponents =[];
+                }
                 draw();
                 return;
             }
@@ -1210,6 +1257,8 @@
                 canvas.style.cursor = 'nwse-resize';
             } else if (isDraggingCanvas) {
                 canvas.style.cursor = 'grabbing';
+            } else if (isSelectMode && !isDraggingPin && !isDraggingComponent) {
+                canvas.style.cursor = 'crosshair';
             } else {
                 canvas.style.cursor = 'grab';
             }
@@ -1261,22 +1310,27 @@
             const world = screenToWorld(screenX, screenY);
 
             if (isSelectingBox) {
-                const minX = Math.min(selectionBoxStart.x, selectionBoxEnd.x);
-                const maxX = Math.max(selectionBoxStart.x, selectionBoxEnd.x);
-                const minY = Math.min(selectionBoxStart.y, selectionBoxEnd.y);
-                const maxY = Math.max(selectionBoxStart.y, selectionBoxEnd.y);
-                
-                components.forEach(comp => {
-                    const compRight = comp.x + comp.width;
-                    const compBottom = comp.y + comp.height;
+                const dx = Math.abs(selectionBoxEnd.x - selectionBoxStart.x) * camera.zoom;
+                const dy = Math.abs(selectionBoxEnd.y - selectionBoxStart.y) * camera.zoom;
+
+                if (dx > 3 || dy > 3) {
+                    const minX = Math.min(selectionBoxStart.x, selectionBoxEnd.x);
+                    const maxX = Math.max(selectionBoxStart.x, selectionBoxEnd.x);
+                    const minY = Math.min(selectionBoxStart.y, selectionBoxEnd.y);
+                    const maxY = Math.max(selectionBoxStart.y, selectionBoxEnd.y);
                     
-                    if (comp.x <= maxX && compRight >= minX &&
-                        comp.y <= maxY && compBottom >= minY) {
-                        if (!selectedComponents.includes(comp)) {
-                            selectedComponents.push(comp);
+                    components.forEach(comp => {
+                        const compRight = comp.x + comp.width;
+                        const compBottom = comp.y + comp.height;
+                        
+                        if (comp.x <= maxX && compRight >= minX &&
+                            comp.y <= maxY && compBottom >= minY) {
+                            if (!selectedComponents.includes(comp)) {
+                                selectedComponents.push(comp);
+                            }
                         }
-                    }
-                });
+                    });
+                }
                 
                 isSelectingBox = false;
                 draw();
@@ -1421,10 +1475,36 @@
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', () => {
                 const type = btn.dataset.type;
-                autoSpawnComponent(type);
+                if (type) {
+                    autoSpawnComponent(type);
+                }
                 btn.blur();
             });
         });
+
+        const modePanBtn = document.getElementById('modePan');
+        const modeSelectBtn = document.getElementById('modeSelect');
+
+        function updateModeUI() {
+            if (modePanBtn && modeSelectBtn) {
+                modePanBtn.classList.toggle('active', !isSelectMode);
+                modeSelectBtn.classList.toggle('active', isSelectMode);
+            }
+        }
+
+        if (modePanBtn) {
+            modePanBtn.addEventListener('click', () => {
+                isSelectMode = false;
+                updateModeUI();
+            });
+        }
+
+        if (modeSelectBtn) {
+            modeSelectBtn.addEventListener('click', () => {
+                isSelectMode = true;
+                updateModeUI();
+            });
+        }
 
         document.querySelectorAll('.popup-item').forEach((item, index) => {
             item.addEventListener('mouseenter', () => {

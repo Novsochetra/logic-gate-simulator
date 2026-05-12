@@ -24,10 +24,11 @@ Here is Current Features We have you don't need to do anything:
 20 Make All Wire connectted using Straight lines with rounded corners (Manhattan/Orthogonal Routing)
 21 Allow Selected All or Selected Specific component.
 22 When We selected all or specific component we can drag it and move where ever we want.
+23 Add New Component (Label Box) with with border and we can edit the label, we are allow the resize the component since we need to put our circuit their so it stay organize
+24 Add New Mode (Select Mode) And Pan Mode To Allow to drag on canvas to select a bunch of component, make sure it doesn't conflict with feature allow to drag canvas
 
 Added Features:
-
-
+* Copy Select Component with cmd + c and pasting cmd + v
 
 YOU MUST:
 * make no mistake
