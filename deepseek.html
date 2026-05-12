@@ -15,11 +15,18 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             overflow: hidden;
             background: #1a1a1a;
+            width: 100vw;
+            height: 100vh;
         }
 
         #canvas {
             display: block;
             cursor: grab;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
 
         #canvas.grabbing {
@@ -119,6 +126,7 @@
             color: white;
             font-size: 12px;
             font-weight: 500;
+            z-index: 1000;
         }
     </style>
 </head>
@@ -159,6 +167,7 @@
         let components = [];
         let wires = [];
         let nextId = 1;
+        let dpr = window.devicePixelRatio || 1;
 
         // Interaction state
         let isDraggingCanvas = false;
@@ -231,7 +240,7 @@
                 ctx.save();
                 
                 if (this.type === 'input') {
-                    // iOS-style toggle (square)
+                    // iOS-style toggle (square knob)
                     const toggleWidth = 60;
                     const toggleHeight = 32;
                     const toggleX = this.x + (this.width - toggleWidth) / 2;
@@ -324,7 +333,7 @@
                     const isSelected = selectedPin && selectedPin.pin === pin && selectedPin.component === this;
                     
                     // Hover effect when dragging wire over
-                    if (hoveredPin && hoveredPin.pin === pin && hoveredPin.component === this) {
+                    if (isHovered) {
                         const gradient = ctx.createRadialGradient(px, py, PIN_RADIUS, px, py, PIN_RADIUS * 4);
                         gradient.addColorStop(0, 'rgba(0, 122, 255, 0.4)');
                         gradient.addColorStop(1, 'rgba(0, 122, 255, 0)');
@@ -368,7 +377,8 @@
                     const isSelected = selectedPin && selectedPin.pin === pin && selectedPin.component === this;
                     
                     // Hover effect
-                    if (hoveredPin && hoveredPin.pin === pin && hoveredPin.component === this) {
+                    const isHovered = hoveredPin && hoveredPin.pin === pin && hoveredPin.component === this;
+                    if (isHovered) {
                         const gradient = ctx.createRadialGradient(px, py, PIN_RADIUS, px, py, PIN_RADIUS * 4);
                         gradient.addColorStop(0, 'rgba(255, 149, 0, 0.4)');
                         gradient.addColorStop(1, 'rgba(255, 149, 0, 0)');
@@ -430,21 +440,41 @@
                 return null;
             }
 
+            // Get the signal value for a specific input pin by checking connected wires
+            getInputSignal(inputPin) {
+                // Find all wires that connect to this input pin
+                const connectedWires = wires.filter(wire => 
+                    wire.to.component === this && wire.to.pin === inputPin
+                );
+                
+                // Return true if any connected wire carries a true signal
+                return connectedWires.some(wire => wire.from.component.state);
+            }
+
             updateState() {
                 if (this.type === 'output') {
-                    this.state = this.inputs[0].connections.some(conn => conn.state);
+                    // Output state is determined by its input pin's signal
+                    if (this.inputs.length > 0) {
+                        this.state = this.getInputSignal(this.inputs[0]);
+                    }
                 } else if (this.type === 'gate') {
-                    const input1 = this.inputs[0].connections.some(conn => conn.state);
-                    const input2 = this.inputs[1].connections.some(conn => conn.state);
-                    this.state = input1 && input2; // AND gate
+                    // AND gate: both inputs must be true
+                    const input1 = this.inputs.length > 0 ? this.getInputSignal(this.inputs[0]) : false;
+                    const input2 = this.inputs.length > 1 ? this.getInputSignal(this.inputs[1]) : false;
+                    this.state = input1 && input2;
                 }
+                // Input type state is manually toggled, not updated here
             }
         }
 
-        // Initialize canvas
+        // Initialize canvas with proper DPR handling
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
             draw();
         }
 
@@ -469,19 +499,22 @@
 
         // Draw grid
         function drawGrid() {
+            const canvasWidth = canvas.width / dpr;
+            const canvasHeight = canvas.height / dpr;
+            
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
             ctx.lineWidth = 1;
 
             const startX = Math.floor(-camera.x / camera.zoom / GRID_SIZE) * GRID_SIZE;
             const startY = Math.floor(-camera.y / camera.zoom / GRID_SIZE) * GRID_SIZE;
-            const endX = startX + canvas.width / camera.zoom + GRID_SIZE;
-            const endY = startY + canvas.height / camera.zoom + GRID_SIZE;
+            const endX = startX + canvasWidth / camera.zoom + GRID_SIZE;
+            const endY = startY + canvasHeight / camera.zoom + GRID_SIZE;
 
             for (let x = startX; x < endX; x += GRID_SIZE) {
                 const screenX = x * camera.zoom + camera.x;
                 ctx.beginPath();
                 ctx.moveTo(screenX, 0);
-                ctx.lineTo(screenX, canvas.height);
+                ctx.lineTo(screenX, canvasHeight);
                 ctx.stroke();
             }
 
@@ -489,7 +522,7 @@
                 const screenY = y * camera.zoom + camera.y;
                 ctx.beginPath();
                 ctx.moveTo(0, screenY);
-                ctx.lineTo(canvas.width, screenY);
+                ctx.lineTo(canvasWidth, screenY);
                 ctx.stroke();
             }
         }
@@ -529,6 +562,7 @@
                                            wire.to.component.y + wire.to.pin.y);
                 
                 const isWireSelected = selectedWire === wire;
+                const isWireActive = wire.from.component.state;
                 
                 // Glow effect for selected wire
                 if (isWireSelected) {
@@ -550,8 +584,7 @@
                 }
                 
                 // Main wire
-                ctx.strokeStyle = isWireSelected ? '#34C759' : 
-                    (wire.from.component.state ? '#34C759' : '#666');
+                ctx.strokeStyle = isWireSelected ? '#34C759' : (isWireActive ? '#34C759' : '#666');
                 ctx.lineWidth = isWireSelected ? 3 : 3;
                 ctx.beginPath();
                 ctx.moveTo(fromPos.x, fromPos.y);
@@ -601,6 +634,7 @@
 
         // Remove wires connected to a pin
         function removeWiresForPin(pinInfo) {
+            // Remove all wires connected to this pin
             wires = wires.filter(wire => {
                 return !(wire.from.component === pinInfo.component && wire.from.pin === pinInfo.pin) &&
                        !(wire.to.component === pinInfo.component && wire.to.pin === pinInfo.pin);
@@ -612,11 +646,18 @@
 
         // Main draw function
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const canvasWidth = canvas.width / dpr;
+            const canvasHeight = canvas.height / dpr;
             
             ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
             drawGrid();
             
+            ctx.save();
             ctx.translate(camera.x, camera.y);
             ctx.scale(camera.zoom, camera.zoom);
             
@@ -625,6 +666,8 @@
             ctx.restore();
             
             drawWires();
+            
+            ctx.restore();
         }
 
         // Create component
@@ -634,9 +677,17 @@
             return comp;
         }
 
-        // Update logic
+        // Update logic - propagate states through the circuit
         function updateLogic() {
-            components.forEach(comp => comp.updateState());
+            // Update in order: inputs first (their state is manual), then gates, then outputs
+            // We need to update gates and outputs based on current wire states
+            
+            // Update all gates
+            components.filter(c => c.type === 'gate').forEach(comp => comp.updateState());
+            
+            // Update all outputs
+            components.filter(c => c.type === 'output').forEach(comp => comp.updateState());
+            
             draw();
         }
 
@@ -654,14 +705,6 @@
                 } else if (selectedWire) {
                     // Remove the selected wire
                     wires = wires.filter(wire => wire !== selectedWire);
-                    
-                    // Clear connections
-                    const fromPin = selectedWire.from.pin;
-                    const toPin = selectedWire.to.pin;
-                    toPin.connections = toPin.connections.filter(conn => 
-                        conn !== selectedWire.from.component
-                    );
-                    
                     selectedWire = null;
                     updateLogic();
                     draw();
@@ -756,9 +799,13 @@
             // Check for component click
             for (let comp of [...components].reverse()) {
                 if (comp.containsPoint(world.x, world.y)) {
-                    if (comp.type === 'input' || comp.type === 'gate') {
+                    if (comp.type === 'input') {
+                        // Toggle input state on click
                         comp.state = !comp.state;
                         updateLogic();
+                    } else if (comp.type === 'gate') {
+                        // Gate is not interactive by click (only via inputs)
+                        // But we can still drag it
                     }
                     isDraggingComponent = comp;
                     dragStart = { x: world.x - comp.x, y: world.y - comp.y };
@@ -787,17 +834,23 @@
             
             mousePos = { x: screenX, y: screenY };
 
-            // Check for hover over pins (only when dragging a wire)
-            if (isDraggingPin) {
-                hoveredPin = null;
-                for (let comp of components) {
-                    const pinInfo = comp.getPinAt(world.x, world.y);
-                    if (pinInfo && pinInfo.type === 'input' && pinInfo.component !== isDraggingPin.component) {
+            // Check for hover over pins (when dragging a wire or just hovering)
+            hoveredPin = null;
+            for (let comp of components) {
+                const pinInfo = comp.getPinAt(world.x, world.y);
+                if (pinInfo) {
+                    // Only show hover effect on input pins when dragging from output
+                    // Or on any pin when not dragging
+                    if (isDraggingPin) {
+                        // When dragging from output, only highlight input pins of other components
+                        if (pinInfo.type === 'input' && pinInfo.component !== isDraggingPin.component) {
+                            hoveredPin = pinInfo;
+                        }
+                    } else {
                         hoveredPin = pinInfo;
-                        break;
                     }
+                    break;
                 }
-                draw();
             }
 
             if (isDraggingCanvas) {
@@ -809,6 +862,8 @@
                 isDraggingComponent.y = world.y - dragStart.y;
                 draw();
             } else if (isDraggingPin) {
+                draw();
+            } else if (hoveredPin) {
                 draw();
             }
         });
@@ -879,7 +934,7 @@
             
             zoomIndicator.textContent = Math.round(camera.zoom * 100) + '%';
             draw();
-        });
+        }, { passive: false });
 
         // Popup selection
         function updatePopupSelection() {
@@ -898,13 +953,15 @@
             
             const newComp = createComponent(selectedType, world.x, world.y);
             
-            // Auto-connect
+            // Auto-connect: connect from source output pin to new component's input
             if (popupSourcePin && newComp.inputs.length > 0) {
+                // Find first available input pin
+                const targetPin = newComp.inputs[0];
                 wires.push({
                     from: popupSourcePin,
-                    to: { pin: newComp.inputs[0], type: 'input', component: newComp }
+                    to: { pin: targetPin, type: 'input', component: newComp }
                 });
-                newComp.inputs[0].connections.push(popupSourcePin.component);
+                targetPin.connections.push(popupSourcePin.component);
                 updateLogic();
             }
             
@@ -938,7 +995,7 @@
 
         // Close popup on outside click
         document.addEventListener('click', (e) => {
-            if (popupVisible && !popup.contains(e.target)) {
+            if (popupVisible && !popup.contains(e.target) && !e.target.closest('.nav-bar')) {
                 popup.classList.remove('show');
                 popupVisible = false;
             }

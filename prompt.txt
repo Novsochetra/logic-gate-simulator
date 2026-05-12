@@ -10,10 +10,10 @@ features:
 * if i drag on pin of component one and release on the empty canvas it should display the popup which contain the list of component (input, output, gate) then i can use keyboard for navigation (arrow up / down) and use key enter to select the new component and auto connected with the previous connector
 * ui of each gate make it like toggle on ios button but with square instead of circle and rounded radius.
 
-please added the new features:
-
 * when drag over other pin added virutlize effect to let user know the pin we can drop on.
 * each pin we can select on and added virtualize effect on it then we can use keyboard shortcut(delete key on mac to delete the wire) on select pin
 * also we can select on wire with the same virtual effect and use delete key to delete the wire. 
+* canvas is full screen with base on dpi screen (no blur)
+* make sure the gate logic when connected with other component is correct
 
 make it work and make no mistake, because full with my requirement bro. don't modify other functionality and make no mistake.
