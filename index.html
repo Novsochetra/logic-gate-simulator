@@ -224,8 +224,8 @@
         // Constants
         const GRID_SIZE = 30;
         const PIN_RADIUS = 6;
-        const COMPONENT_WIDTH = 90; // Changed from 80 to neatly align within the 30px grid cells
-        const COMPONENT_HEIGHT = 60; // Changed from 50 to neatly align within the 30px grid cells
+        const COMPONENT_WIDTH = 90; 
+        const COMPONENT_HEIGHT = 60;
 
         // Canvas state
         let camera = { x: 0, y: 0, zoom: 1 };
@@ -254,11 +254,9 @@
         let clipboard = null;
         let pasteOffset = GRID_SIZE;
         
-        // Track valid pin drags instead of immediate single clicks
         let dragStartMousePos = { x: 0, y: 0 };
         let pinDragDidMove = false;
 
-        // Group Selection and Multi-drag states
         let dragStartWorld = { x: 0, y: 0 };
         let selectedComponentsInitPos =[];
         let componentDragDidMove = false;
@@ -266,7 +264,6 @@
         let selectionBoxStart = { x: 0, y: 0 };
         let selectionBoxEnd = { x: 0, y: 0 };
 
-        // Helper function for rounded rectangles
         if (!ctx.roundRect) {
             ctx.roundRect = function(x, y, width, height, radius) {
                 if (typeof radius === 'number') {
@@ -286,7 +283,6 @@
             };
         }
 
-        // Component class
         class Component {
             constructor(type, x, y) {
                 this.id = nextId++;
@@ -324,6 +320,8 @@
                     ];
                     this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
                 }
+                
+                this.nextState = this.state;
             }
 
             draw() {
@@ -348,14 +346,12 @@
                     ctx.stroke();
                     ctx.setLineDash([]);
                     
-                    // Draw Label Header
                     ctx.fillStyle = selectedComponents.includes(this) ? '#007AFF' : 'rgba(255, 255, 255, 0.6)';
                     ctx.font = '600 14px sans-serif';
                     ctx.textAlign = 'left';
                     ctx.textBaseline = 'top';
                     ctx.fillText(this.label, this.x + 14, this.y + 14);
                     
-                    // Draw Resize Handle
                     ctx.fillStyle = selectedComponents.includes(this) ? '#007AFF' : 'rgba(255, 255, 255, 0.2)';
                     ctx.beginPath();
                     ctx.moveTo(this.x + this.width - 16, this.y + this.height);
@@ -364,7 +360,7 @@
                     ctx.fill();
                     
                     ctx.restore();
-                    return; // Skip drawing logic gate details
+                    return; 
                 }
 
                 ctx.save();
@@ -545,8 +541,6 @@
 
             containsPoint(x, y) {
                 if (this.type === 'label_box') {
-                    // Only allow selecting/dragging by the header (top 40px) or the thin 10px edges
-                    // This lets clicks inside the large empty body fall through for canvas panning/selection!
                     const inHeader = x >= this.x && x <= this.x + this.width &&
                                      y >= this.y && y <= this.y + 40;
                     
@@ -583,7 +577,6 @@
 
             getResizeHandleAt(x, y) {
                 if (this.type !== 'label_box') return false;
-                // Bottom right corner, 20x20 triangle area
                 return x >= this.x + this.width - 20 && x <= this.x + this.width &&
                        y >= this.y + this.height - 20 && y <= this.y + this.height;
             }
@@ -595,19 +588,27 @@
                 return connectedWires.some(wire => wire.from.component.state);
             }
 
-            updateState() {
+            calculateNextState() {
                 if (this.type === 'output') {
-                    if (this.inputs.length > 0) {
-                        this.state = this.getInputSignal(this.inputs[0]);
-                    }
+                    this.nextState = this.inputs.length > 0 ? this.getInputSignal(this.inputs[0]) : false;
                 } else if (this.type === 'gate') {
                     const input1 = this.inputs.length > 0 ? this.getInputSignal(this.inputs[0]) : false;
                     const input2 = this.inputs.length > 1 ? this.getInputSignal(this.inputs[1]) : false;
-                    this.state = input1 && input2;
+                    this.nextState = input1 && input2;
                 } else if (this.type === 'not_gate') {
                     const input1 = this.inputs.length > 0 ? this.getInputSignal(this.inputs[0]) : false;
-                    this.state = !input1;
+                    this.nextState = !input1;
+                } else {
+                    this.nextState = this.state;
                 }
+            }
+
+            applyNextState() {
+                if (this.state !== this.nextState) {
+                    this.state = this.nextState;
+                    return true;
+                }
+                return false;
             }
         }
 
@@ -872,10 +873,8 @@
             ctx.translate(camera.x, camera.y);
             ctx.scale(camera.zoom, camera.zoom);
             
-            // Draw background labels/boxes first so they are under logic gates
             components.filter(c => c.type === 'label_box').forEach(comp => comp.draw());
             
-            // Draw logic components on top
             components.filter(c => c.type !== 'label_box').forEach(comp => comp.draw());
             
             if (isSelectingBox) {
@@ -926,31 +925,38 @@
             draw();
         }
 
-        function updateLogic() {
-            let changed = true;
-            let attempts = 0;
-            const maxAttempts = 1000;
+        // Kept for backward compatibility with UI event hookups so we don't throw errors
+        // Logic evaluation is now asynchronously handled via the setInterval loop below
+        function updateLogic() {}
 
-            while (changed && attempts < maxAttempts) {
-                changed = false;
-                
-                const prevStates = new Map();
-                components.forEach(c => prevStates.set(c.id, c.state));
-                
-                components.filter(c => c.type === 'gate' || c.type === 'not_gate').forEach(comp => comp.updateState());
-                components.filter(c => c.type === 'output').forEach(comp => comp.updateState());
-                
-                components.forEach(c => {
-                    if (c.state !== prevStates.get(c.id)) {
-                        changed = true;
-                    }
-                });
-                
-                attempts++;
-            }
+        // ----------------------------------------------------------------------
+        // SIMULATION TICK ENGINE: Replaces the buggy infinite loop solver.
+        // Runs at a steady 40 frames per second, allowing signals to correctly 
+        // propagate step-by-step and oscillators to naturally blink over time.
+        // ----------------------------------------------------------------------
+        setInterval(() => {
+            let changed = false;
             
-            draw();
-        }
+            // Phase 1: Calculate the next states of all components 
+            // relying ONLY on their inputs' previous states (Moore Machine logic)
+            components.forEach(comp => {
+                if (comp.calculateNextState) {
+                    comp.calculateNextState();
+                }
+            });
+            
+            // Phase 2: Apply states and mark if anything actually flipped
+            components.forEach(comp => {
+                if (comp.applyNextState && comp.applyNextState()) {
+                    changed = true;
+                }
+            });
+            
+            // Repaint the screen only if a logic state updated
+            if (changed) {
+                draw();
+            }
+        }, 25); 
 
         function openLabelEditor(comp) {
             editingComponent = comp;
@@ -986,7 +992,7 @@
 
         document.addEventListener('keydown', (e) => {
             if (document.activeElement === labelEditor) {
-                return; // Let user type freely
+                return; 
             }
 
             if (e.key.toLowerCase() === 'v' && !e.metaKey && !e.ctrlKey) {
@@ -1003,7 +1009,6 @@
                 return;
             }
 
-            // Copy Action
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
                 e.preventDefault();
                 if (selectedComponents.length > 0) {
@@ -1021,7 +1026,6 @@
                         wires:[]
                     };
                     
-                    // Capture wires between selected components
                     wires.forEach(w => {
                         if (selectedComponents.includes(w.from.component) && selectedComponents.includes(w.to.component)) {
                             clipboard.wires.push({
@@ -1034,19 +1038,17 @@
                             });
                         }
                     });
-                    pasteOffset = GRID_SIZE; // reset paste offset
+                    pasteOffset = GRID_SIZE; 
                 }
                 return;
             }
 
-            // Paste Action
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
                 e.preventDefault();
                 if (clipboard && clipboard.components.length > 0) {
                     const idMap = new Map();
-                    selectedComponents =[]; // Clear current selection to focus on newly pasted ones
+                    selectedComponents =[]; 
                     
-                    // Recreate components
                     clipboard.components.forEach(cc => {
                         const newX = Math.round((cc.x + pasteOffset) / GRID_SIZE) * GRID_SIZE;
                         const newY = Math.round((cc.y + pasteOffset) / GRID_SIZE) * GRID_SIZE;
@@ -1062,7 +1064,6 @@
                         idMap.set(cc.id, newComp);
                     });
                     
-                    // Recreate wires between the duplicated components
                     clipboard.wires.forEach(cw => {
                         const fromComp = idMap.get(cw.fromCompId);
                         const toComp = idMap.get(cw.toCompId);
@@ -1080,8 +1081,7 @@
                         }
                     });
                     
-                    pasteOffset += GRID_SIZE; // shift next paste
-                    updateLogic();
+                    pasteOffset += GRID_SIZE; 
                     draw();
                 }
                 return;
@@ -1117,7 +1117,6 @@
                     components = components.filter(c => !selectedComponents.includes(c));
                     selectedComponents =[];
                 }
-                updateLogic();
                 draw();
                 return;
             }
@@ -1178,7 +1177,6 @@
                 
                 if (comp.type === 'input' && selectedComponents.includes(comp)) {
                     comp.state = !comp.state;
-                    updateLogic();
                 }
             } else {
                 if (!selectedComponents.includes(comp)) {
@@ -1188,7 +1186,6 @@
                 
                 if (comp.type === 'input') {
                     comp.state = !comp.state;
-                    updateLogic();
                 }
             }
 
@@ -1221,7 +1218,6 @@
             
             mousePos = { x: screenX, y: screenY };
 
-            // 1. Check Pins
             for (let comp of [...components].reverse()) {
                 const pinInfo = comp.getPinAt(world.x, world.y);
                 if (pinInfo) {
@@ -1237,7 +1233,6 @@
                 }
             }
 
-            // 2. Check Wires
             for (let wire of wires) {
                 if (isPointNearWire(world.x, world.y, wire)) {
                     selectedWire = wire;
@@ -1249,7 +1244,6 @@
                 }
             }
 
-            // 3. Check Box Resizing Handles
             for (let comp of [...components].reverse()) {
                 if (comp.type === 'label_box' && comp.getResizeHandleAt(world.x, world.y)) {
                     isResizingComponent = comp;
@@ -1265,7 +1259,6 @@
                 }
             }
 
-            // 4. Check Logic Components
             const logicComps = components.filter(c => c.type !== 'label_box');
             for (let comp of [...logicComps].reverse()) {
                 if (comp.containsPoint(world.x, world.y)) {
@@ -1274,7 +1267,6 @@
                 }
             }
 
-            // 5. Check Label Boxes background
             const boxComps = components.filter(c => c.type === 'label_box');
             for (let comp of [...boxComps].reverse()) {
                 if (comp.containsPoint(world.x, world.y)) {
@@ -1283,7 +1275,6 @@
                 }
             }
 
-            // 6. Canvas Operations (Box select or Pan)
             if (isSelectMode || e.shiftKey || e.metaKey || e.ctrlKey) {
                 isSelectingBox = true;
                 selectionBoxStart = { x: world.x, y: world.y };
@@ -1314,7 +1305,6 @@
             
             mousePos = { x: screenX, y: screenY };
 
-            // Hover pin checks
             hoveredPin = null;
             for (let comp of components) {
                 const pinInfo = comp.getPinAt(world.x, world.y);
@@ -1330,7 +1320,6 @@
                 }
             }
 
-            // Cursor updates
             let isHoveringResize = false;
             for (let comp of components) {
                 if (comp.type === 'label_box' && comp.getResizeHandleAt(world.x, world.y)) {
@@ -1349,7 +1338,6 @@
                 canvas.style.cursor = 'grab';
             }
 
-            // Drag operations
             if (isSelectingBox) {
                 selectionBoxEnd = { x: world.x, y: world.y };
                 draw();
@@ -1447,7 +1435,6 @@
                                 to: toPin
                             });
                             toPin.pin.connections.push(fromPin.component);
-                            updateLogic();
                         }
                     } else {
                         popup.style.left = screenX + 'px';
@@ -1552,7 +1539,6 @@
                     });
                     popupSourcePin.pin.connections.push(newComp);
                 }
-                updateLogic();
             }
             
             popup.classList.remove('show');

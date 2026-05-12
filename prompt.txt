@@ -27,6 +27,7 @@ Here is Current Features We have you don't need to do anything:
 24 Add New Mode (Select Mode) And Pan Mode To Allow to drag on canvas to select a bunch of component, make sure it doesn't conflict with feature allow to drag canvas
 25 Copy Select Component with cmd + c and pasting cmd + v
 26 moving component on canvas snap to each grid make sure all component is align with the grid. becareful on input, output and logic gate. the label box is easier that other.
+27 Mak sure clock oscillator is working
 
 Add Features:
    -
