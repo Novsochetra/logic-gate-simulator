@@ -165,7 +165,7 @@
         // Canvas state
         let camera = { x: 0, y: 0, zoom: 1 };
         let components = [];
-        let wires = [];
+        let wires =[];
         let nextId = 1;
         let dpr = window.devicePixelRatio || 1;
 
@@ -181,6 +181,11 @@
         let hoveredPin = null;
         let selectedPin = null;
         let selectedWire = null;
+        let selectedComponents =[];
+        
+        // Track valid pin drags instead of immediate single clicks
+        let dragStartMousePos = { x: 0, y: 0 };
+        let pinDragDidMove = false;
 
         // Constants
         const GRID_SIZE = 30;
@@ -221,16 +226,16 @@
                 if (type === 'input') {
                     this.state = false;
                     this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
-                    this.inputs = [];
+                    this.inputs =[];
                 } else if (type === 'output') {
                     this.inputs = [{ x: 0, y: this.height / 2, connections: [] }];
-                    this.outputs = [];
+                    this.outputs =[];
                     this.state = false;
                 } else if (type === 'gate') {
                     this.state = false;
                     this.inputs = [
                         { x: 0, y: this.height * 0.3, connections: [] },
-                        { x: 0, y: this.height * 0.7, connections: [] }
+                        { x: 0, y: this.height * 0.7, connections:[] }
                     ];
                     this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
                 }
@@ -239,6 +244,18 @@
             draw() {
                 ctx.save();
                 
+                if (selectedComponents.includes(this)) {
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(255, 214, 10, 0.1)';
+                    ctx.strokeStyle = '#FFD60A';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.roundRect(this.x - 4, this.y - 4, this.width + 8, this.height + 8, 8);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
                 if (this.type === 'input') {
                     // iOS-style toggle (square knob)
                     const toggleWidth = 60;
@@ -326,13 +343,9 @@
                     const px = this.x + pin.x;
                     const py = this.y + pin.y;
                     
-                    // Check if this pin is being hovered
                     const isHovered = hoveredPin && hoveredPin.pin === pin && hoveredPin.component === this;
-                    
-                    // Check if this pin is selected
                     const isSelected = selectedPin && selectedPin.pin === pin && selectedPin.component === this;
                     
-                    // Hover effect when dragging wire over
                     if (isHovered) {
                         const gradient = ctx.createRadialGradient(px, py, PIN_RADIUS, px, py, PIN_RADIUS * 4);
                         gradient.addColorStop(0, 'rgba(0, 122, 255, 0.4)');
@@ -343,7 +356,6 @@
                         ctx.fill();
                     }
                     
-                    // Selection effect
                     if (isSelected) {
                         ctx.strokeStyle = '#FFD60A';
                         ctx.lineWidth = 3;
@@ -360,7 +372,6 @@
                     ctx.arc(px, py, PIN_RADIUS, 0, Math.PI * 2);
                     ctx.fill();
                     
-                    // Inner highlight
                     if (isSelected) {
                         ctx.fillStyle = 'white';
                         ctx.beginPath();
@@ -373,11 +384,9 @@
                     const px = this.x + pin.x;
                     const py = this.y + pin.y;
                     
-                    // Check if this pin is selected
                     const isSelected = selectedPin && selectedPin.pin === pin && selectedPin.component === this;
-                    
-                    // Hover effect
                     const isHovered = hoveredPin && hoveredPin.pin === pin && hoveredPin.component === this;
+                    
                     if (isHovered) {
                         const gradient = ctx.createRadialGradient(px, py, PIN_RADIUS, px, py, PIN_RADIUS * 4);
                         gradient.addColorStop(0, 'rgba(255, 149, 0, 0.4)');
@@ -388,7 +397,6 @@
                         ctx.fill();
                     }
                     
-                    // Selection effect
                     if (isSelected) {
                         ctx.strokeStyle = '#FFD60A';
                         ctx.lineWidth = 3;
@@ -405,7 +413,6 @@
                     ctx.arc(px, py, PIN_RADIUS, 0, Math.PI * 2);
                     ctx.fill();
                     
-                    // Inner highlight
                     if (isSelected) {
                         ctx.fillStyle = 'white';
                         ctx.beginPath();
@@ -440,34 +447,27 @@
                 return null;
             }
 
-            // Get the signal value for a specific input pin by checking connected wires
             getInputSignal(inputPin) {
-                // Find all wires that connect to this input pin
                 const connectedWires = wires.filter(wire => 
                     wire.to.component === this && wire.to.pin === inputPin
                 );
-                
-                // Return true if any connected wire carries a true signal
                 return connectedWires.some(wire => wire.from.component.state);
             }
 
             updateState() {
                 if (this.type === 'output') {
-                    // Output state is determined by its input pin's signal
                     if (this.inputs.length > 0) {
                         this.state = this.getInputSignal(this.inputs[0]);
                     }
                 } else if (this.type === 'gate') {
-                    // AND gate: both inputs must be true
                     const input1 = this.inputs.length > 0 ? this.getInputSignal(this.inputs[0]) : false;
                     const input2 = this.inputs.length > 1 ? this.getInputSignal(this.inputs[1]) : false;
                     this.state = input1 && input2;
                 }
-                // Input type state is manually toggled, not updated here
             }
         }
 
-        // Initialize canvas with proper DPR handling
+        // Initialize canvas
         function resizeCanvas() {
             dpr = window.devicePixelRatio || 1;
             const rect = canvas.getBoundingClientRect();
@@ -481,7 +481,6 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // Screen to world coordinates
         function screenToWorld(screenX, screenY) {
             return {
                 x: (screenX - camera.x) / camera.zoom,
@@ -489,7 +488,6 @@
             };
         }
 
-        // World to screen coordinates
         function worldToScreen(worldX, worldY) {
             return {
                 x: worldX * camera.zoom + camera.x,
@@ -497,7 +495,6 @@
             };
         }
 
-        // Draw grid
         function drawGrid() {
             const canvasWidth = canvas.width / dpr;
             const canvasHeight = canvas.height / dpr;
@@ -527,17 +524,14 @@
             }
         }
 
-        // Helper function to check if a point is near a wire
         function isPointNearWire(worldX, worldY, wire) {
             const fromX = wire.from.component.x + wire.from.pin.x;
             const fromY = wire.from.component.y + wire.from.pin.y;
             const toX = wire.to.component.x + wire.to.pin.x;
             const toY = wire.to.component.y + wire.to.pin.y;
             
-            // Check multiple points along the bezier curve
             const threshold = 10 / camera.zoom;
             for (let t = 0; t <= 1; t += 0.05) {
-                // Cubic bezier curve with control points
                 const cx1 = fromX + (toX - fromX) * 0.5;
                 const cy1 = fromY;
                 const cx2 = fromX + (toX - fromX) * 0.5;
@@ -553,7 +547,6 @@
             return false;
         }
 
-        // Draw wires
         function drawWires() {
             wires.forEach((wire, index) => {
                 const fromPos = worldToScreen(wire.from.component.x + wire.from.pin.x, 
@@ -564,7 +557,11 @@
                 const isWireSelected = selectedWire === wire;
                 const isWireActive = wire.from.component.state;
                 
-                // Glow effect for selected wire
+                const cx1 = fromPos.x + (toPos.x - fromPos.x) * 0.5;
+                const cy1 = fromPos.y;
+                const cx2 = fromPos.x + (toPos.x - fromPos.x) * 0.5;
+                const cy2 = toPos.y;
+
                 if (isWireSelected) {
                     ctx.strokeStyle = '#34C759';
                     ctx.lineWidth = 7;
@@ -572,32 +569,18 @@
                     ctx.shadowBlur = 20;
                     ctx.beginPath();
                     ctx.moveTo(fromPos.x, fromPos.y);
-                    
-                    const cx1 = fromPos.x + (toPos.x - fromPos.x) * 0.5;
-                    const cy1 = fromPos.y;
-                    const cx2 = fromPos.x + (toPos.x - fromPos.x) * 0.5;
-                    const cy2 = toPos.y;
-                    
                     ctx.bezierCurveTo(cx1, cy1, cx2, cy2, toPos.x, toPos.y);
                     ctx.stroke();
                     ctx.shadowBlur = 0;
                 }
                 
-                // Main wire
                 ctx.strokeStyle = isWireSelected ? '#34C759' : (isWireActive ? '#34C759' : '#666');
                 ctx.lineWidth = isWireSelected ? 3 : 3;
                 ctx.beginPath();
                 ctx.moveTo(fromPos.x, fromPos.y);
-                
-                const cx1 = fromPos.x + (toPos.x - fromPos.x) * 0.5;
-                const cy1 = fromPos.y;
-                const cx2 = fromPos.x + (toPos.x - fromPos.x) * 0.5;
-                const cy2 = toPos.y;
-                
                 ctx.bezierCurveTo(cx1, cy1, cx2, cy2, toPos.x, toPos.y);
                 ctx.stroke();
                 
-                // Inner highlight for selected wire
                 if (isWireSelected) {
                     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
                     ctx.lineWidth = 1;
@@ -609,7 +592,7 @@
             });
 
             // Draw temporary wire while dragging
-            if (isDraggingPin) {
+            if (isDraggingPin && pinDragDidMove) {
                 const fromPos = worldToScreen(
                     isDraggingPin.component.x + isDraggingPin.pin.x,
                     isDraggingPin.component.y + isDraggingPin.pin.y
@@ -632,19 +615,14 @@
             }
         }
 
-        // Remove wires connected to a pin
         function removeWiresForPin(pinInfo) {
-            // Remove all wires connected to this pin
             wires = wires.filter(wire => {
                 return !(wire.from.component === pinInfo.component && wire.from.pin === pinInfo.pin) &&
                        !(wire.to.component === pinInfo.component && wire.to.pin === pinInfo.pin);
             });
-            
-            // Clear connections array for the pin
-            pinInfo.pin.connections = [];
+            pinInfo.pin.connections =[];
         }
 
-        // Main draw function
         function draw() {
             const canvasWidth = canvas.width / dpr;
             const canvasHeight = canvas.height / dpr;
@@ -670,49 +648,54 @@
             ctx.restore();
         }
 
-        // Create component
         function createComponent(type, worldX, worldY) {
             const comp = new Component(type, worldX, worldY);
             components.push(comp);
             return comp;
         }
 
-        // Update logic - propagate states through the circuit
         function updateLogic() {
-            // Update in order: inputs first (their state is manual), then gates, then outputs
-            // We need to update gates and outputs based on current wire states
-            
-            // Update all gates
             components.filter(c => c.type === 'gate').forEach(comp => comp.updateState());
-            
-            // Update all outputs
             components.filter(c => c.type === 'output').forEach(comp => comp.updateState());
-            
             draw();
         }
 
-        // Keyboard event for deletion
         document.addEventListener('keydown', (e) => {
-            // Handle delete/backspace for selected elements
-            if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedPin || selectedWire)) {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
+                e.preventDefault();
+                selectedComponents = [...components];
+                selectedPin = null;
+                selectedWire = null;
+                if (popupVisible) {
+                    popup.classList.remove('show');
+                    popupVisible = false;
+                    popupSourcePin = null;
+                }
+                draw();
+                return;
+            }
+
+            if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedPin || selectedWire || selectedComponents.length > 0)) {
                 e.preventDefault();
                 
                 if (selectedPin) {
                     removeWiresForPin(selectedPin);
                     selectedPin = null;
-                    updateLogic();
-                    draw();
                 } else if (selectedWire) {
-                    // Remove the selected wire
                     wires = wires.filter(wire => wire !== selectedWire);
                     selectedWire = null;
-                    updateLogic();
-                    draw();
+                } else if (selectedComponents.length > 0) {
+                    selectedComponents.forEach(comp => {
+                        wires = wires.filter(wire => wire.from.component !== comp && wire.to.component !== comp);
+                    });
+                    components = components.filter(c => !selectedComponents.includes(c));
+                    selectedComponents =[];
                 }
+                updateLogic();
+                draw();
                 return;
             }
 
-            // Handle popup navigation
             if (popupVisible) {
                 if (e.key === 'ArrowDown') {
                     e.preventDefault();
@@ -728,11 +711,11 @@
                 } else if (e.key === 'Escape') {
                     popup.classList.remove('show');
                     popupVisible = false;
+                    popupSourcePin = null;
                 }
                 return;
             }
 
-            // Handle component shortcuts
             const rect = canvas.getBoundingClientRect();
             const centerX = rect.width / 2;
             const centerY = rect.height / 2;
@@ -748,15 +731,20 @@
                 createComponent('gate', world.x, world.y);
                 draw();
             } else if (e.key === 'Escape') {
-                // Deselect on escape
                 selectedPin = null;
                 selectedWire = null;
+                selectedComponents =[];
+                isDraggingPin = null;
+                hoveredPin = null;
                 draw();
             }
         });
 
-        // Mouse events
         canvas.addEventListener('mousedown', (e) => {
+            if (popupVisible) {
+                return;
+            }
+
             const rect = canvas.getBoundingClientRect();
             const screenX = e.clientX - rect.left;
             const screenY = e.clientY - rect.top;
@@ -764,66 +752,60 @@
             
             mousePos = { x: screenX, y: screenY };
 
-            // Check for pin click (left side - input pins)
+            // Check for pin click to either select or start drag
             for (let comp of [...components].reverse()) {
                 const pinInfo = comp.getPinAt(world.x, world.y);
-                if (pinInfo && pinInfo.type === 'output') {
-                    // Start dragging from output pin
+                if (pinInfo) {
                     isDraggingPin = pinInfo;
-                    // Clear selection when starting to drag
-                    selectedPin = null;
-                    selectedWire = null;
-                    return;
-                }
-                if (pinInfo && pinInfo.type === 'input') {
-                    // Select input pin (don't start drag)
+                    dragStartMousePos = { x: screenX, y: screenY };
+                    pinDragDidMove = false;
+                    
                     selectedPin = pinInfo;
                     selectedWire = null;
-                    isDraggingPin = null;
+                    selectedComponents =[];
                     draw();
                     return;
                 }
             }
 
-            // Check for wire click
             for (let wire of wires) {
                 if (isPointNearWire(world.x, world.y, wire)) {
                     selectedWire = wire;
                     selectedPin = null;
+                    selectedComponents =[];
                     isDraggingPin = null;
                     draw();
                     return;
                 }
             }
 
-            // Check for component click
             for (let comp of [...components].reverse()) {
                 if (comp.containsPoint(world.x, world.y)) {
                     if (comp.type === 'input') {
-                        // Toggle input state on click
                         comp.state = !comp.state;
                         updateLogic();
-                    } else if (comp.type === 'gate') {
-                        // Gate is not interactive by click (only via inputs)
-                        // But we can still drag it
                     }
                     isDraggingComponent = comp;
                     dragStart = { x: world.x - comp.x, y: world.y - comp.y };
-                    // Clear selections when dragging component
                     selectedPin = null;
                     selectedWire = null;
+                    
+                    if (!selectedComponents.includes(comp)) {
+                        selectedComponents = [comp];
+                    }
+                    draw();
                     return;
                 }
             }
 
-            // Start canvas drag
             isDraggingCanvas = true;
             dragStart = { x: e.clientX - camera.x, y: e.clientY - camera.y };
             canvas.classList.add('grabbing');
             
-            // Clear selections when clicking on empty canvas
             selectedPin = null;
             selectedWire = null;
+            selectedComponents =[];
+            draw();
         });
 
         canvas.addEventListener('mousemove', (e) => {
@@ -834,16 +816,12 @@
             
             mousePos = { x: screenX, y: screenY };
 
-            // Check for hover over pins (when dragging a wire or just hovering)
             hoveredPin = null;
             for (let comp of components) {
                 const pinInfo = comp.getPinAt(world.x, world.y);
                 if (pinInfo) {
-                    // Only show hover effect on input pins when dragging from output
-                    // Or on any pin when not dragging
                     if (isDraggingPin) {
-                        // When dragging from output, only highlight input pins of other components
-                        if (pinInfo.type === 'input' && pinInfo.component !== isDraggingPin.component) {
+                        if (pinInfo.type !== isDraggingPin.type && pinInfo.component !== isDraggingPin.component) {
                             hoveredPin = pinInfo;
                         }
                     } else {
@@ -862,6 +840,9 @@
                 isDraggingComponent.y = world.y - dragStart.y;
                 draw();
             } else if (isDraggingPin) {
+                if (Math.hypot(screenX - dragStartMousePos.x, screenY - dragStartMousePos.y) > 5) {
+                    pinDragDidMove = true;
+                }
                 draw();
             } else if (hoveredPin) {
                 draw();
@@ -875,34 +856,37 @@
             const world = screenToWorld(screenX, screenY);
 
             if (isDraggingPin) {
-                // Check if released on another pin
-                let targetPin = null;
-                for (let comp of components) {
-                    const pinInfo = comp.getPinAt(world.x, world.y);
-                    if (pinInfo && pinInfo.type === 'input' && pinInfo.component !== isDraggingPin.component) {
-                        targetPin = pinInfo;
-                        break;
+                if (pinDragDidMove) {
+                    let targetPin = null;
+                    for (let comp of components) {
+                        const pinInfo = comp.getPinAt(world.x, world.y);
+                        if (pinInfo && pinInfo.type !== isDraggingPin.type && pinInfo.component !== isDraggingPin.component) {
+                            targetPin = pinInfo;
+                            break;
+                        }
+                    }
+
+                    if (targetPin) {
+                        const fromPin = isDraggingPin.type === 'output' ? isDraggingPin : targetPin;
+                        const toPin = isDraggingPin.type === 'input' ? isDraggingPin : targetPin;
+                        
+                        wires.push({
+                            from: fromPin,
+                            to: toPin
+                        });
+                        toPin.pin.connections.push(fromPin.component);
+                        updateLogic();
+                    } else {
+                        popup.style.left = screenX + 'px';
+                        popup.style.top = screenY + 'px';
+                        popup.classList.add('show');
+                        popupVisible = true;
+                        popupSelectedIndex = 0;
+                        popupSourcePin = isDraggingPin;
+                        updatePopupSelection();
                     }
                 }
-
-                if (targetPin) {
-                    // Create wire
-                    wires.push({
-                        from: isDraggingPin,
-                        to: targetPin
-                    });
-                    targetPin.pin.connections.push(isDraggingPin.component);
-                    updateLogic();
-                } else {
-                    // Show popup
-                    popup.style.left = screenX + 'px';
-                    popup.style.top = screenY + 'px';
-                    popup.classList.add('show');
-                    popupVisible = true;
-                    popupSelectedIndex = 0;
-                    popupSourcePin = isDraggingPin;
-                    updatePopupSelection();
-                }
+                
                 isDraggingPin = null;
                 hoveredPin = null;
             }
@@ -913,7 +897,6 @@
             draw();
         });
 
-        // Wheel event for zoom
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             
@@ -936,7 +919,6 @@
             draw();
         }, { passive: false });
 
-        // Popup selection
         function updatePopupSelection() {
             const items = popup.querySelectorAll('.popup-item');
             items.forEach((item, i) => {
@@ -953,15 +935,22 @@
             
             const newComp = createComponent(selectedType, world.x, world.y);
             
-            // Auto-connect: connect from source output pin to new component's input
-            if (popupSourcePin && newComp.inputs.length > 0) {
-                // Find first available input pin
-                const targetPin = newComp.inputs[0];
-                wires.push({
-                    from: popupSourcePin,
-                    to: { pin: targetPin, type: 'input', component: newComp }
-                });
-                targetPin.connections.push(popupSourcePin.component);
+            if (popupSourcePin) {
+                if (popupSourcePin.type === 'output' && newComp.inputs.length > 0) {
+                    const targetPin = { pin: newComp.inputs[0], type: 'input', component: newComp };
+                    wires.push({
+                        from: popupSourcePin,
+                        to: targetPin
+                    });
+                    targetPin.pin.connections.push(popupSourcePin.component);
+                } else if (popupSourcePin.type === 'input' && newComp.outputs.length > 0) {
+                    const sourcePin = { pin: newComp.outputs[0], type: 'output', component: newComp };
+                    wires.push({
+                        from: sourcePin,
+                        to: popupSourcePin
+                    });
+                    popupSourcePin.pin.connections.push(newComp);
+                }
                 updateLogic();
             }
             
@@ -971,7 +960,6 @@
             draw();
         }
 
-        // Nav bar clicks
         document.querySelectorAll('.nav-item').forEach(btn => {
             btn.addEventListener('click', () => {
                 const type = btn.dataset.type;
@@ -984,7 +972,6 @@
             });
         });
 
-        // Popup item clicks
         document.querySelectorAll('.popup-item').forEach((item, index) => {
             item.addEventListener('mouseenter', () => {
                 popupSelectedIndex = index;
@@ -993,11 +980,12 @@
             item.addEventListener('click', selectPopupItem);
         });
 
-        // Close popup on outside click
-        document.addEventListener('click', (e) => {
-            if (popupVisible && !popup.contains(e.target) && !e.target.closest('.nav-bar')) {
+        // Close popup on outside mousedown to bypass immediate event triggering bugs
+        document.addEventListener('mousedown', (e) => {
+            if (popupVisible && !popup.contains(e.target)) {
                 popup.classList.remove('show');
                 popupVisible = false;
+                popupSourcePin = null;
             }
         });
     </script>

@@ -1,19 +1,29 @@
-features: 
+Here is Current Features We have you don't need to do anything: 
 
-* drag input anywhere in the screen
-* infinite canvas 
-* can use track pad on mac to zoom in / out on canvas
-* the canvas should has grid display for better virtuilize
-* float  nav of component at the bottom center which contain (input, output, gate)
-   * each nav menu has it own short cut key (key 1 for input, key 2 for output, key 3 for gate)
-* on each pin of component we can drag it and connect to other pin of other component
-* if i drag on pin of component one and release on the empty canvas it should display the popup which contain the list of component (input, output, gate) then i can use keyboard for navigation (arrow up / down) and use key enter to select the new component and auto connected with the previous connector
-* ui of each gate make it like toggle on ios button but with square instead of circle and rounded radius.
+1 drag input anywhere in the screen
+2 infinite canvas 
+3 can use track pad on mac to zoom in / out on canvas
+4 the canvas should has grid display for better virtuilize
+5 float  nav of component at the bottom center which contain (input, output, gate)
+   5.1 each nav menu has it own short cut key (key 1 for input, key 2 for output, key 3 for gate)
+6 on each pin of component we can drag it and connect to other pin of other component
+7 when i drag pin and release to empty canvas show the popup display the component and allow me to select item from list of component using arrrow up / arrow down and enter key to select from popup component
+8 ui of each gate make it like toggle on ios button but with square instead of circle and rounded radius.
 
-* when drag over other pin added virutlize effect to let user know the pin we can drop on.
-* each pin we can select on and added virtualize effect on it then we can use keyboard shortcut(delete key on mac to delete the wire) on select pin
-* also we can select on wire with the same virtual effect and use delete key to delete the wire. 
-* canvas is full screen with base on dpi screen (no blur)
-* make sure the gate logic when connected with other component is correct
+9 when drag over other pin added virutlize effect to let user know the pin we can drop on.
+10 each pin we can select on and added virtualize effect on it then we can use keyboard shortcut(delete key on mac to delete the wire) on select pin
+11 also we can select on wire with the same virtual effect and use delete key to delete the wire. 
+12 canvas is full screen with base on dpi screen (no blur)
+13 make sure the gate logic when connected with other component is correct
+14 select the component and able to delete it with keyboard shortcut (delete key on mac)
+15 using cmd + a to select all component and delete key on mac to delete all selected component
 
-make it work and make no mistake, because full with my requirement bro. don't modify other functionality and make no mistake.
+Added Features:
+
+
+YOU MUST:
+* make no mistake
+* becareful with my requirement bro. 
+* don't modify other functionality.
+* always verify and tested the new added feature.
+* don't modify my default ui componnent (input, output, logic gate)
