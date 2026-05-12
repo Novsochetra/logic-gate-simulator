@@ -9,7 +9,6 @@ Here is Current Features We have you don't need to do anything:
 6 on each pin of component we can drag it and connect to other pin of other component
 7 when i drag pin and release to empty canvas show the popup display the component and allow me to select item from list of component using arrrow up / arrow down and enter key to select from popup component
 8 ui of each gate make it like toggle on ios button but with square instead of circle and rounded radius.
-
 9 when drag over other pin added virutlize effect to let user know the pin we can drop on.
 10 each pin we can select on and added virtualize effect on it then we can use keyboard shortcut(delete key on mac to delete the wire) on select pin
 11 also we can select on wire with the same virtual effect and use delete key to delete the wire. 
@@ -26,13 +25,17 @@ Here is Current Features We have you don't need to do anything:
 22 When We selected all or specific component we can drag it and move where ever we want.
 23 Add New Component (Label Box) with with border and we can edit the label, we are allow the resize the component since we need to put our circuit their so it stay organize
 24 Add New Mode (Select Mode) And Pan Mode To Allow to drag on canvas to select a bunch of component, make sure it doesn't conflict with feature allow to drag canvas
+25 Copy Select Component with cmd + c and pasting cmd + v
+26 moving component on canvas snap to each grid make sure all component is align with the grid. becareful on input, output and logic gate. the label box is easier that other.
 
-Added Features:
-* Copy Select Component with cmd + c and pasting cmd + v
+Add Features:
+   -
+Fix Bugs:
+   - 
 
 YOU MUST:
 * make no mistake
-* becareful with my requirement bro. 
+* becareful with my requirement. 
 * don't modify other functionality.
 * always verify and tested the new added feature.
 * don't modify my default ui componnent (input, output, logic gate)

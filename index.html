@@ -1,673 +1,1615 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>⚡ logic gate simulator · infinite canvas</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      background: #0a0a14;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      overflow: hidden;
-      height: 100vh;
-      width: 100vw;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    #toolbar {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 6px;
-      background: rgba(15, 15, 28, 0.9);
-      backdrop-filter: blur(24px);
-      padding: 8px 16px;
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.8);
-      z-index: 100;
-      border: 1px solid rgba(255,255,255,0.12);
-      flex-wrap: wrap;
-    }
-    .tool-btn {
-      background: #1a1a2e;
-      border: none;
-      color: #aaa;
-      font-weight: 500;
-      font-size: 0.8rem;
-      padding: 8px 12px;
-      border-radius: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.2s;
-      border: 1px solid transparent;
-      white-space: nowrap;
-    }
-    .tool-btn svg {
-      width: 16px;
-      height: 16px;
-      stroke: currentColor;
-      stroke-width: 2;
-      fill: none;
-    }
-    .tool-btn:hover {
-      background: #2a2a44;
-      color: #ddd;
-      border-color: rgba(255,255,255,0.2);
-    }
-    .tool-btn.active {
-      background: #4a3fcf;
-      color: white;
-      border-color: #8b7fff;
-      box-shadow: 0 0 16px #5b4fcf;
-    }
-    .shortcut {
-      font-size: 0.65rem;
-      background: rgba(255,255,255,0.1);
-      padding: 2px 5px;
-      border-radius: 6px;
-    }
-    #canvas-container {
-      width: 100vw;
-      height: 100vh;
-      cursor: grab;
-    }
-    #canvas-container.grabbing {
-      cursor: grabbing;
-    }
-    #canvas-container.wire-dragging {
-      cursor: crosshair;
-    }
-    .help-bar {
-      position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(15,15,28,0.85);
-      backdrop-filter: blur(16px);
-      color: #888;
-      padding: 6px 18px;
-      border-radius: 20px;
-      font-size: 0.7rem;
-      border: 1px solid #333;
-      z-index: 90;
-      display: flex;
-      gap: 18px;
-    }
-    .help-bar span {
-      color: #b7aefb;
-      font-weight: 600;
-    }
-    .zoom-indicator {
-      position: fixed;
-      bottom: 60px;
-      right: 20px;
-      background: rgba(15,15,28,0.8);
-      color: #ccc;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.7rem;
-      z-index: 90;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logic Gate Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas {
+            display: block;
+            cursor: grab;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #canvas.grabbing {
+            cursor: grabbing;
+        }
+
+        .nav-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 12px 20px;
+            display: flex;
+            gap: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            outline: none;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .nav-item:active {
+            transform: translateY(0);
+        }
+
+        .nav-item.active {
+            background: #007AFF;
+        }
+
+        .nav-item.active:hover {
+            background: #0066CC;
+        }
+
+        .nav-item.active .shortcut {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .nav-divider {
+            width: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1px;
+            margin: 0 4px;
+            flex-shrink: 0;
+        }
+
+        .nav-item .shortcut {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #007AFF;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .component-popup {
+            position: fixed;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: none;
+        }
+
+        .component-popup.show {
+            display: block;
+        }
+
+        .popup-item {
+            padding: 12px 20px;
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .popup-item:hover,
+        .popup-item.selected {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .zoom-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 1000;
+        }
+
+        .label-editor {
+            position: fixed;
+            display: none;
+            z-index: 3000;
+            background: #2C2C2E;
+            color: white;
+            border: 2px solid #007AFF;
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-family: sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            outline: none;
+            min-width: 100px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+    </style>
 </head>
 <body>
-  <div id="toolbar">
-    <button id="btn-input" class="tool-btn" title="Input node (I)">
-      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="0" stroke="currentColor" stroke-width="2.5"/><text x="12" y="17" text-anchor="middle" fill="currentColor" font-size="12" font-weight="bold">IN</text></svg> Input <span class="shortcut">I</span>
-    </button>
-    <button id="btn-output" class="tool-btn" title="Output light (O)">
-      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="0" stroke="currentColor" stroke-width="2.5"/><text x="12" y="17" text-anchor="middle" fill="currentColor" font-size="11" font-weight="bold">OUT</text></svg> Output <span class="shortcut">O</span>
-    </button>
-    <button id="btn-and" class="tool-btn" title="AND Gate (A)">
-      <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="0" stroke="currentColor" stroke-width="2.2"/><text x="12" y="16" text-anchor="middle" fill="currentColor" font-size="13" font-weight="bold">&</text></svg> AND <span class="shortcut">A</span>
-    </button>
-    <button id="btn-or" class="tool-btn" title="OR Gate (R)">
-      <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="0" stroke="currentColor" stroke-width="2.2"/><text x="12" y="16" text-anchor="middle" fill="currentColor" font-size="12" font-weight="bold">≥1</text></svg> OR <span class="shortcut">R</span>
-    </button>
-    <button id="btn-not" class="tool-btn" title="NOT Gate (N)">
-      <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="0" stroke="currentColor" stroke-width="2.2"/><text x="12" y="16" text-anchor="middle" fill="currentColor" font-size="11">NOT</text></svg> NOT <span class="shortcut">N</span>
-    </button>
-    <button id="btn-wire" class="tool-btn active" title="Drag from output pin to connect">
-      <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="2.5"/><circle cx="4" cy="20" r="2.5" fill="currentColor"/><circle cx="20" cy="4" r="2.5" fill="currentColor"/></svg> Connect <span class="shortcut">W</span>
-    </button>
-  </div>
+    <canvas id="canvas"></canvas>
+    
+    <div class="nav-bar">
+        <button class="nav-item active" id="modePan">
+            Pan Mode
+            <span class="shortcut">V</span>
+        </button>
+        <button class="nav-item" id="modeSelect">
+            Select Mode
+            <span class="shortcut">S</span>
+        </button>
+        <div class="nav-divider"></div>
+        <button class="nav-item" data-type="input">
+            Input
+            <span class="shortcut">1</span>
+        </button>
+        <button class="nav-item" data-type="output">
+            Output
+            <span class="shortcut">2</span>
+        </button>
+        <button class="nav-item" data-type="gate">
+            Gate
+            <span class="shortcut">3</span>
+        </button>
+        <button class="nav-item" data-type="not_gate">
+            NOT Gate
+            <span class="shortcut">4</span>
+        </button>
+        <button class="nav-item" data-type="label_box">
+            Label Box
+            <span class="shortcut">5</span>
+        </button>
+    </div>
 
-  <div id="canvas-container"></div>
-  <div class="zoom-indicator" id="zoom-level">100%</div>
+    <div class="component-popup" id="componentPopup">
+        <div class="popup-item" data-type="input">Input</div>
+        <div class="popup-item" data-type="output">Output</div>
+        <div class="popup-item" data-type="gate">AND Gate</div>
+        <div class="popup-item" data-type="not_gate">NOT Gate</div>
+        <div class="popup-item" data-type="label_box">Label Box</div>
+    </div>
 
-  <div class="help-bar">
-    <div>🖱️ <span>drag canvas</span> · <span>pinch/trackpad</span> zoom</div>
-    <div>🔗 <span>drag from ● output pin</span> to connect</div>
-    <div>🔄 <span>double-click input</span> toggle</div>
-    <div>⌨️ <span>I O A R N W</span> · <span>⌘A Del</span> all</div>
-  </div>
+    <div class="zoom-indicator" id="zoomIndicator">100%</div>
+    <input type="text" id="labelEditor" class="label-editor" autocomplete="off" spellcheck="false" />
 
-  <script>
-    (() => {
-      const container = document.getElementById('canvas-container');
-      const zoomIndicator = document.getElementById('zoom-level');
-      
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("width", "100%");
-      svg.setAttribute("height", "100%");
-      svg.style.position = "absolute";
-      svg.style.top = "0";
-      svg.style.left = "0";
-      container.appendChild(svg);
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const popup = document.getElementById('componentPopup');
+        const zoomIndicator = document.getElementById('zoomIndicator');
+        const labelEditor = document.getElementById('labelEditor');
 
-      const mainGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      svg.appendChild(mainGroup);
+        // Constants
+        const GRID_SIZE = 30;
+        const PIN_RADIUS = 6;
+        const COMPONENT_WIDTH = 90; // Changed from 80 to neatly align within the 30px grid cells
+        const COMPONENT_HEIGHT = 60; // Changed from 50 to neatly align within the 30px grid cells
 
-      // Grid pattern
-      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-      const pattern = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
-      pattern.setAttribute("id", "grid");
-      pattern.setAttribute("width", "60");
-      pattern.setAttribute("height", "60");
-      pattern.setAttribute("patternUnits", "userSpaceOnUse");
-      const gridPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      gridPath.setAttribute("d", "M 60 0 L 0 0 0 60");
-      gridPath.setAttribute("fill", "none");
-      gridPath.setAttribute("stroke", "rgba(255,255,255,0.04)");
-      gridPath.setAttribute("stroke-width", "1");
-      pattern.appendChild(gridPath);
-      defs.appendChild(pattern);
-      svg.appendChild(defs);
-      
-      const gridRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      gridRect.setAttribute("x", "-10000");
-      gridRect.setAttribute("y", "-10000");
-      gridRect.setAttribute("width", "20000");
-      gridRect.setAttribute("height", "20000");
-      gridRect.setAttribute("fill", "url(#grid)");
-      mainGroup.appendChild(gridRect);
+        // Canvas state
+        let camera = { x: 0, y: 0, zoom: 1 };
+        let components =[];
+        let wires =[];
+        let nextId = 1;
+        let dpr = window.devicePixelRatio || 1;
 
-      // State
-      let currentTool = 'wire'; // wire mode is default for direct pin dragging
-      let elements = [];
-      let wires = [];
-      let selectedElementIds = new Set();
-      
-      // Pin dragging state (for direct connection)
-      let pinDragStart = null; // { elementId, portType, clientX, clientY }
-      let tempWireEnd = null;
-      
-      // Pan/Zoom
-      let isPanning = false;
-      let panStart = { x: 0, y: 0 };
-      let groupTransform = { x: 0, y: 0 };
-      let scale = 1;
-      
-      // Element dragging
-      let isDraggingElement = false;
-      let dragElementId = null;
-      let dragOffset = { x: 0, y: 0 };
-      
-      let nextId = 1;
+        // Interaction state
+        let isSelectMode = false;
+        let isDraggingCanvas = false;
+        let isDraggingComponent = null;
+        let isResizingComponent = null;
+        let resizeStart = { w: 0, h: 0 };
+        let isDraggingPin = null;
+        let dragStart = { x: 0, y: 0 };
+        let mousePos = { x: 0, y: 0 };
+        let popupVisible = false;
+        let popupSelectedIndex = 0;
+        let popupSourcePin = null;
+        let hoveredPin = null;
+        let selectedPin = null;
+        let selectedWire = null;
+        let selectedComponents =[];
+        let editingComponent = null;
+        let clipboard = null;
+        let pasteOffset = GRID_SIZE;
+        
+        // Track valid pin drags instead of immediate single clicks
+        let dragStartMousePos = { x: 0, y: 0 };
+        let pinDragDidMove = false;
 
-      function updateTransform() {
-        mainGroup.setAttribute("transform", `translate(${groupTransform.x},${groupTransform.y}) scale(${scale})`);
-        zoomIndicator.textContent = Math.round(scale * 100) + '%';
-      }
+        // Group Selection and Multi-drag states
+        let dragStartWorld = { x: 0, y: 0 };
+        let selectedComponentsInitPos =[];
+        let componentDragDidMove = false;
+        let isSelectingBox = false;
+        let selectionBoxStart = { x: 0, y: 0 };
+        let selectionBoxEnd = { x: 0, y: 0 };
 
-      function createElement(type, x, y) {
-        return { id: nextId++, type, x, y, value: (type==='input'?0:0), state:0 };
-      }
-
-      function getPortPosition(el, portType) {
-        const size = 22;
-        if (el.type === 'input') return { x: el.x + size, y: el.y };
-        if (el.type === 'output') return { x: el.x - size, y: el.y };
-        if (el.type === 'and' || el.type === 'or') return portType==='output' ? {x: el.x+30, y: el.y} : {x: el.x-30, y: el.y};
-        if (el.type === 'not') return portType==='output' ? {x: el.x+26, y: el.y} : {x: el.x-26, y: el.y};
-        return {x: el.x, y: el.y};
-      }
-
-      function getElementState(el) {
-        if (el.type === 'input') return el.value;
-        const inputs = wires.filter(w => w.toElement === el.id).map(w => {
-          const src = elements.find(e=>e.id===w.fromElement);
-          return src ? getElementState(src) : 0;
-        });
-        if (el.type === 'output') return inputs[0] ?? 0;
-        if (el.type === 'and') return inputs.length ? (inputs.every(v=>v===1)?1:0) : 0;
-        if (el.type === 'or') return inputs.length ? (inputs.some(v=>v===1)?1:0) : 0;
-        if (el.type === 'not') return inputs.length ? (inputs[0]===1?0:1) : 1;
-        return 0;
-      }
-
-      function evaluateCircuit() {
-        elements.forEach(el => { if (el.type !== 'input') el.state = getElementState(el); });
-      }
-
-      function isOutputPin(el, point) {
-        const pos = getPortPosition(el, 'output');
-        const dx = point.x - pos.x;
-        const dy = point.y - pos.y;
-        return Math.sqrt(dx*dx + dy*dy) < 14;
-      }
-
-      function isInputPin(el, point) {
-        if (el.type === 'input') return false;
-        const pos = getPortPosition(el, 'input');
-        const dx = point.x - pos.x;
-        const dy = point.y - pos.y;
-        return Math.sqrt(dx*dx + dy*dy) < 14;
-      }
-
-      function getElementAtPoint(point) {
-        for (let i = elements.length-1; i >= 0; i--) {
-          const el = elements[i];
-          const dx = point.x - el.x;
-          const dy = point.y - el.y;
-          if (Math.abs(dx) < 26 && Math.abs(dy) < 26) return el;
+        // Helper function for rounded rectangles
+        if (!ctx.roundRect) {
+            ctx.roundRect = function(x, y, width, height, radius) {
+                if (typeof radius === 'number') {
+                    radius = {tl: radius, tr: radius, br: radius, bl: radius};
+                }
+                this.beginPath();
+                this.moveTo(x + radius.tl, y);
+                this.lineTo(x + width - radius.tr, y);
+                this.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+                this.lineTo(x + width, y + height - radius.br);
+                this.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+                this.lineTo(x + radius.bl, y + height);
+                this.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+                this.lineTo(x, y + radius.tl);
+                this.quadraticCurveTo(x, y, x + radius.tl, y);
+                this.closePath();
+            };
         }
-        return null;
-      }
 
-      function renderAll() {
-        const existing = mainGroup.querySelectorAll('.element-group, .wire-group');
-        existing.forEach(g=>g.remove());
-        
-        const wireGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        wireGroup.classList.add("wire-group");
-        mainGroup.appendChild(wireGroup);
-        
-        wires.forEach(wire => {
-          const fromEl = elements.find(e=>e.id===wire.fromElement);
-          const toEl = elements.find(e=>e.id===wire.toElement);
-          if (!fromEl || !toEl) return;
-          const p1 = getPortPosition(fromEl, 'output');
-          const p2 = getPortPosition(toEl, 'input');
-          const val = getElementState(fromEl);
-          const color = val === 1 ? '#4ade80' : '#f87171';
-          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-          line.setAttribute("x1", p1.x); line.setAttribute("y1", p1.y);
-          line.setAttribute("x2", p2.x); line.setAttribute("y2", p2.y);
-          line.setAttribute("stroke", color);
-          line.setAttribute("stroke-width", "3");
-          line.setAttribute("stroke-linecap", "round");
-          line.style.pointerEvents = "stroke";
-          line.style.cursor = "pointer";
-          line.dataset.wireId = wire.id;
-          line.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (e.metaKey || e.ctrlKey) {
-              wires = wires.filter(w=>w.id!==wire.id);
-              evaluateCircuit();
-              renderAll();
+        // Component class
+        class Component {
+            constructor(type, x, y) {
+                this.id = nextId++;
+                this.type = type;
+                this.x = x;
+                this.y = y;
+                this.width = COMPONENT_WIDTH;
+                this.height = COMPONENT_HEIGHT;
+                
+                if (type === 'label_box') {
+                    this.width = Math.round(250 / GRID_SIZE) * GRID_SIZE;
+                    this.height = Math.round(180 / GRID_SIZE) * GRID_SIZE;
+                    this.label = 'Circuit Label';
+                    this.inputs = [];
+                    this.outputs =[];
+                } else if (type === 'input') {
+                    this.state = false;
+                    this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
+                    this.inputs =[];
+                } else if (type === 'output') {
+                    this.inputs = [{ x: 0, y: this.height / 2, connections: [] }];
+                    this.outputs =[];
+                    this.state = false;
+                } else if (type === 'gate') {
+                    this.state = false;
+                    this.inputs = [
+                        { x: 0, y: this.height * 0.3, connections: [] },
+                        { x: 0, y: this.height * 0.7, connections:[] }
+                    ];
+                    this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
+                } else if (type === 'not_gate') {
+                    this.state = true;
+                    this.inputs = [
+                        { x: 0, y: this.height / 2, connections: [] }
+                    ];
+                    this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
+                }
             }
-          });
-          wireGroup.appendChild(line);
-        });
-        
-        if (pinDragStart && tempWireEnd) {
-          const startEl = elements.find(e=>e.id===pinDragStart.elementId);
-          if (startEl) {
-            const p1 = getPortPosition(startEl, pinDragStart.portType);
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", p1.x); line.setAttribute("y1", p1.y);
-            line.setAttribute("x2", tempWireEnd.x); line.setAttribute("y2", tempWireEnd.y);
-            line.setAttribute("stroke", "#fbbf24");
-            line.setAttribute("stroke-width", "3");
-            line.setAttribute("stroke-dasharray", "8 4");
-            wireGroup.appendChild(line);
-          }
+
+            draw() {
+                if (this.type === 'label_box') {
+                    ctx.save();
+                    
+                    if (selectedComponents.includes(this)) {
+                        ctx.fillStyle = 'rgba(0, 122, 255, 0.05)';
+                        ctx.strokeStyle = '#007AFF';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([]);
+                    } else {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.015)';
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([6, 6]);
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.roundRect(this.x, this.y, this.width, this.height, 12);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Draw Label Header
+                    ctx.fillStyle = selectedComponents.includes(this) ? '#007AFF' : 'rgba(255, 255, 255, 0.6)';
+                    ctx.font = '600 14px sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(this.label, this.x + 14, this.y + 14);
+                    
+                    // Draw Resize Handle
+                    ctx.fillStyle = selectedComponents.includes(this) ? '#007AFF' : 'rgba(255, 255, 255, 0.2)';
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + this.width - 16, this.y + this.height);
+                    ctx.lineTo(this.x + this.width, this.y + this.height - 16);
+                    ctx.lineTo(this.x + this.width, this.y + this.height);
+                    ctx.fill();
+                    
+                    ctx.restore();
+                    return; // Skip drawing logic gate details
+                }
+
+                ctx.save();
+                
+                if (selectedComponents.includes(this)) {
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(255, 214, 10, 0.1)';
+                    ctx.strokeStyle = '#FFD60A';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.roundRect(this.x - 4, this.y - 4, this.width + 8, this.height + 8, 8);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                if (this.type === 'input') {
+                    const toggleWidth = 60;
+                    const toggleHeight = 32;
+                    const toggleX = this.x + (this.width - toggleWidth) / 2;
+                    const toggleY = this.y + (this.height - toggleHeight) / 2;
+                    
+                    ctx.fillStyle = this.state ? '#34C759' : '#3A3A3C';
+                    ctx.beginPath();
+                    ctx.roundRect(toggleX, toggleY, toggleWidth, toggleHeight, 8);
+                    ctx.fill();
+                    
+                    const knobSize = 24;
+                    const knobX = this.state ? toggleX + toggleWidth - knobSize - 4 : toggleX + 4;
+                    const knobY = toggleY + 4;
+                    
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.roundRect(knobX, knobY, knobSize, knobSize, 6);
+                    ctx.fill();
+                    
+                } else if (this.type === 'output') {
+                    const centerX = this.x + this.width / 2;
+                    const centerY = this.y + this.height / 2;
+                    const size = 18;
+                    
+                    ctx.fillStyle = this.state ? '#34C759' : '#2C2C2E';
+                    ctx.strokeStyle = this.state ? '#34C759' : '#48484A';
+                    ctx.lineWidth = 3;
+                    
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (Math.PI / 3) * i;
+                        const x = centerX + size * Math.cos(angle);
+                        const y = centerY + size * Math.sin(angle);
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    if (this.state) {
+                        ctx.fillStyle = 'rgba(52, 199, 89, 0.4)';
+                        ctx.beginPath();
+                        for (let i = 0; i < 6; i++) {
+                            const angle = (Math.PI / 3) * i;
+                            const x = centerX + (size - 4) * Math.cos(angle);
+                            const y = centerY + (size - 4) * Math.sin(angle);
+                            if (i === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    
+                } else if (this.type === 'gate' || this.type === 'not_gate') {
+                    const chipWidth = 65;
+                    const chipHeight = 40;
+                    const chipX = this.x + (this.width - chipWidth) / 2;
+                    const chipY = this.y + (this.height - chipHeight) / 2;
+                    
+                    ctx.fillStyle = this.state ? '#5856D6' : '#2C2C2E';
+                    ctx.strokeStyle = this.state ? '#7D7AFF' : '#48484A';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.roundRect(chipX, chipY, chipWidth, chipHeight, 6);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = this.state ? 'white' : '#8E8E93';
+                    ctx.font = 'bold 14px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    const text = this.type === 'gate' ? 'AND' : 'NOT';
+                    ctx.fillText(text, this.x + this.width / 2, this.y + this.height / 2);
+                }
+                
+                this.inputs.forEach(pin => {
+                    const px = this.x + pin.x;
+                    const py = this.y + pin.y;
+                    
+                    const isHovered = hoveredPin && hoveredPin.pin === pin && hoveredPin.component === this;
+                    const isSelected = selectedPin && selectedPin.pin === pin && selectedPin.component === this;
+                    
+                    if (isHovered) {
+                        const gradient = ctx.createRadialGradient(px, py, PIN_RADIUS, px, py, PIN_RADIUS * 4);
+                        gradient.addColorStop(0, 'rgba(0, 122, 255, 0.4)');
+                        gradient.addColorStop(1, 'rgba(0, 122, 255, 0)');
+                        ctx.fillStyle = gradient;
+                        ctx.beginPath();
+                        ctx.arc(px, py, PIN_RADIUS * 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    if (isSelected) {
+                        ctx.strokeStyle = '#FFD60A';
+                        ctx.lineWidth = 3;
+                        ctx.shadowColor = '#FFD60A';
+                        ctx.shadowBlur = 15;
+                        ctx.beginPath();
+                        ctx.arc(px, py, PIN_RADIUS * 2.5, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    }
+                    
+                    ctx.fillStyle = '#007AFF';
+                    ctx.beginPath();
+                    ctx.arc(px, py, PIN_RADIUS, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    if (isSelected) {
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath();
+                        ctx.arc(px, py, PIN_RADIUS * 0.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+                
+                this.outputs.forEach(pin => {
+                    const px = this.x + pin.x;
+                    const py = this.y + pin.y;
+                    
+                    const isSelected = selectedPin && selectedPin.pin === pin && selectedPin.component === this;
+                    const isHovered = hoveredPin && hoveredPin.pin === pin && hoveredPin.component === this;
+                    
+                    if (isHovered) {
+                        const gradient = ctx.createRadialGradient(px, py, PIN_RADIUS, px, py, PIN_RADIUS * 4);
+                        gradient.addColorStop(0, 'rgba(255, 149, 0, 0.4)');
+                        gradient.addColorStop(1, 'rgba(255, 149, 0, 0)');
+                        ctx.fillStyle = gradient;
+                        ctx.beginPath();
+                        ctx.arc(px, py, PIN_RADIUS * 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    if (isSelected) {
+                        ctx.strokeStyle = '#FFD60A';
+                        ctx.lineWidth = 3;
+                        ctx.shadowColor = '#FFD60A';
+                        ctx.shadowBlur = 15;
+                        ctx.beginPath();
+                        ctx.arc(px, py, PIN_RADIUS * 2.5, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    }
+                    
+                    ctx.fillStyle = '#FF9500';
+                    ctx.beginPath();
+                    ctx.arc(px, py, PIN_RADIUS, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    if (isSelected) {
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath();
+                        ctx.arc(px, py, PIN_RADIUS * 0.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+                
+                ctx.restore();
+            }
+
+            containsPoint(x, y) {
+                if (this.type === 'label_box') {
+                    // Only allow selecting/dragging by the header (top 40px) or the thin 10px edges
+                    // This lets clicks inside the large empty body fall through for canvas panning/selection!
+                    const inHeader = x >= this.x && x <= this.x + this.width &&
+                                     y >= this.y && y <= this.y + 40;
+                    
+                    const inBorder = x >= this.x && x <= this.x + this.width &&
+                                     y >= this.y && y <= this.y + this.height &&
+                                     (x <= this.x + 10 || x >= this.x + this.width - 10 || y >= this.y + this.height - 10);
+                                     
+                    return inHeader || inBorder;
+                }
+
+                return x >= this.x && x <= this.x + this.width &&
+                       y >= this.y && y <= this.y + this.height;
+            }
+
+            getPinAt(x, y) {
+                if (this.type === 'label_box') return null;
+
+                for (let pin of this.inputs) {
+                    const px = this.x + pin.x;
+                    const py = this.y + pin.y;
+                    if (Math.hypot(x - px, y - py) < PIN_RADIUS * 2) {
+                        return { pin, type: 'input', component: this };
+                    }
+                }
+                for (let pin of this.outputs) {
+                    const px = this.x + pin.x;
+                    const py = this.y + pin.y;
+                    if (Math.hypot(x - px, y - py) < PIN_RADIUS * 2) {
+                        return { pin, type: 'output', component: this };
+                    }
+                }
+                return null;
+            }
+
+            getResizeHandleAt(x, y) {
+                if (this.type !== 'label_box') return false;
+                // Bottom right corner, 20x20 triangle area
+                return x >= this.x + this.width - 20 && x <= this.x + this.width &&
+                       y >= this.y + this.height - 20 && y <= this.y + this.height;
+            }
+
+            getInputSignal(inputPin) {
+                const connectedWires = wires.filter(wire => 
+                    wire.to.component === this && wire.to.pin === inputPin
+                );
+                return connectedWires.some(wire => wire.from.component.state);
+            }
+
+            updateState() {
+                if (this.type === 'output') {
+                    if (this.inputs.length > 0) {
+                        this.state = this.getInputSignal(this.inputs[0]);
+                    }
+                } else if (this.type === 'gate') {
+                    const input1 = this.inputs.length > 0 ? this.getInputSignal(this.inputs[0]) : false;
+                    const input2 = this.inputs.length > 1 ? this.getInputSignal(this.inputs[1]) : false;
+                    this.state = input1 && input2;
+                } else if (this.type === 'not_gate') {
+                    const input1 = this.inputs.length > 0 ? this.getInputSignal(this.inputs[0]) : false;
+                    this.state = !input1;
+                }
+            }
         }
-        
-        const elemGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        elemGroup.classList.add("element-group");
-        mainGroup.appendChild(elemGroup);
-        
-        elements.forEach(el => {
-          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-          g.setAttribute("transform", `translate(${el.x},${el.y})`);
-          g.dataset.elementId = el.id;
-          
-          drawElement(g, el);
-          
-          // Output pin (always visible, draggable)
-          const outPos = getPortPosition(el, 'output');
-          const outPin = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-          outPin.setAttribute("cx", outPos.x - el.x);
-          outPin.setAttribute("cy", outPos.y - el.y);
-          outPin.setAttribute("r", "7");
-          outPin.setAttribute("fill", "#fbbf24");
-          outPin.setAttribute("stroke", "#000");
-          outPin.setAttribute("stroke-width", "1.5");
-          outPin.style.cursor = "crosshair";
-          outPin.classList.add("output-pin");
-          outPin.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            startPinDrag(el.id, 'output', e);
-          });
-          g.appendChild(outPin);
-          
-          // Input pin for gates/output
-          if (el.type !== 'input') {
-            const inPos = getPortPosition(el, 'input');
-            const inPin = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            inPin.setAttribute("cx", inPos.x - el.x);
-            inPin.setAttribute("cy", inPos.y - el.y);
-            inPin.setAttribute("r", "7");
-            inPin.setAttribute("fill", "#60a5fa");
-            inPin.setAttribute("stroke", "#000");
-            inPin.setAttribute("stroke-width", "1.5");
-            inPin.style.cursor = "crosshair";
-            inPin.classList.add("input-pin");
-            inPin.addEventListener('mouseup', (e) => {
-              e.stopPropagation();
-              if (pinDragStart && pinDragStart.portType === 'output') {
-                finishPinDrag(el.id, 'input');
-              }
-            });
-            g.appendChild(inPin);
-          }
-          
-          // Selection highlight
-          if (selectedElementIds.has(el.id)) {
-            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            rect.setAttribute("x", "-32"); rect.setAttribute("y", "-32");
-            rect.setAttribute("width", "64"); rect.setAttribute("height", "64");
-            rect.setAttribute("fill", "none"); rect.setAttribute("stroke", "#fbbf24");
-            rect.setAttribute("stroke-width", "2.5"); rect.setAttribute("rx", "0");
-            rect.setAttribute("pointer-events", "none");
-            g.appendChild(rect);
-          }
-          
-          g.addEventListener('mousedown', (e) => {
-            if (e.target.classList.contains('output-pin') || e.target.classList.contains('input-pin')) return;
-            e.stopPropagation();
-            if (e.metaKey || e.ctrlKey) {
-              if (selectedElementIds.has(el.id)) selectedElementIds.delete(el.id);
-              else selectedElementIds.add(el.id);
-              renderAll();
+
+        // Initialize canvas
+        function resizeCanvas() {
+            dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function screenToWorld(screenX, screenY) {
+            return {
+                x: (screenX - camera.x) / camera.zoom,
+                y: (screenY - camera.y) / camera.zoom
+            };
+        }
+
+        function worldToScreen(worldX, worldY) {
+            return {
+                x: worldX * camera.zoom + camera.x,
+                y: worldY * camera.zoom + camera.y
+            };
+        }
+
+        function drawGrid() {
+            const canvasWidth = canvas.width / dpr;
+            const canvasHeight = canvas.height / dpr;
+            
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+
+            const startX = Math.floor(-camera.x / camera.zoom / GRID_SIZE) * GRID_SIZE;
+            const startY = Math.floor(-camera.y / camera.zoom / GRID_SIZE) * GRID_SIZE;
+            const endX = startX + canvasWidth / camera.zoom + GRID_SIZE;
+            const endY = startY + canvasHeight / camera.zoom + GRID_SIZE;
+
+            for (let x = startX; x < endX; x += GRID_SIZE) {
+                const screenX = x * camera.zoom + camera.x;
+                ctx.beginPath();
+                ctx.moveTo(screenX, 0);
+                ctx.lineTo(screenX, canvasHeight);
+                ctx.stroke();
+            }
+
+            for (let y = startY; y < endY; y += GRID_SIZE) {
+                const screenY = y * camera.zoom + camera.y;
+                ctx.beginPath();
+                ctx.moveTo(0, screenY);
+                ctx.lineTo(canvasWidth, screenY);
+                ctx.stroke();
+            }
+        }
+
+        function getOrthogonalPath(fromX, fromY, toX, toY, isSelfLoop = false) {
+            const points =[];
+            const offset = 20; 
+            
+            points.push({ x: fromX, y: fromY });
+            
+            if (isSelfLoop) {
+                const loopDir = toY > fromY ? 1 : -1;
+                const loopY = (toY > fromY ? Math.max(fromY, toY) : Math.min(fromY, toY)) + (loopDir * 45);
+                
+                points.push({ x: fromX + offset, y: fromY });
+                points.push({ x: fromX + offset, y: loopY });
+                points.push({ x: toX - offset, y: loopY });
+                points.push({ x: toX - offset, y: toY });
             } else {
-              selectedElementIds.clear();
-              selectedElementIds.add(el.id);
-              isDraggingElement = true;
-              dragElementId = el.id;
-              const pos = getSVGPoint(e);
-              dragOffset = { x: pos.x - el.x, y: pos.y - el.y };
-              renderAll();
+                if (fromX + offset < toX - offset) {
+                    const midX = fromX + (toX - fromX) / 2;
+                    points.push({ x: midX, y: fromY });
+                    points.push({ x: midX, y: toY });
+                } else {
+                    const distY = Math.abs(fromY - toY);
+                    let routeY;
+                    if (distY < 60) {
+                        routeY = Math.max(fromY, toY) + 60;
+                    } else {
+                        routeY = fromY + (toY - fromY) / 2;
+                    }
+                    
+                    points.push({ x: fromX + offset, y: fromY });
+                    points.push({ x: fromX + offset, y: routeY });
+                    points.push({ x: toX - offset, y: routeY });
+                    points.push({ x: toX - offset, y: toY });
+                }
             }
-          });
-          
-          g.addEventListener('dblclick', (e) => {
-            e.stopPropagation();
-            if (el.type === 'input') toggleInput(el.id);
-          });
-          
-          g.addEventListener('mouseup', (e) => {
-            if (pinDragStart && pinDragStart.portType === 'output' && el.type !== 'input') {
-              finishPinDrag(el.id, 'input');
+            
+            points.push({ x: toX, y: toY });
+            return points;
+        }
+
+        function drawPathWithRoundedCorners(ctx, points, baseRadius) {
+            if (points.length === 0) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            
+            for (let i = 1; i < points.length - 1; i++) {
+                const p0 = points[i - 1];
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                
+                const d1 = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+                const d2 = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                const radius = Math.min(baseRadius, d1 / 2, d2 / 2);
+                
+                ctx.arcTo(p1.x, p1.y, p2.x, p2.y, radius);
             }
-          });
-          
-          elemGroup.appendChild(g);
+            
+            const last = points[points.length - 1];
+            ctx.lineTo(last.x, last.y);
+            ctx.stroke();
+        }
+
+        function distancePointToSegment(px, py, x1, y1, x2, y2) {
+            const A = px - x1;
+            const B = py - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+
+            const dot = A * C + B * D;
+            const len_sq = C * C + D * D;
+            let param = -1;
+            
+            if (len_sq !== 0) param = dot / len_sq;
+
+            let xx, yy;
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+
+            const dx = px - xx;
+            const dy = py - yy;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function isPointNearWire(worldX, worldY, wire) {
+            const fromX = wire.from.component.x + wire.from.pin.x;
+            const fromY = wire.from.component.y + wire.from.pin.y;
+            const toX = wire.to.component.x + wire.to.pin.x;
+            const toY = wire.to.component.y + wire.to.pin.y;
+            
+            const isSelfLoop = wire.from.component === wire.to.component;
+            const points = getOrthogonalPath(fromX, fromY, toX, toY, isSelfLoop);
+            
+            const threshold = 10 / camera.zoom;
+            
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                const dist = distancePointToSegment(worldX, worldY, p1.x, p1.y, p2.x, p2.y);
+                if (dist < threshold) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function drawWires() {
+            const scaledRadius = 8 * camera.zoom;
+
+            wires.forEach((wire) => {
+                const fromWorldX = wire.from.component.x + wire.from.pin.x;
+                const fromWorldY = wire.from.component.y + wire.from.pin.y;
+                const toWorldX = wire.to.component.x + wire.to.pin.x;
+                const toWorldY = wire.to.component.y + wire.to.pin.y;
+
+                const isWireSelected = selectedWire === wire;
+                const isWireActive = wire.from.component.state;
+                const isSelfLoop = wire.from.component === wire.to.component;
+                
+                const points = getOrthogonalPath(fromWorldX, fromWorldY, toWorldX, toWorldY, isSelfLoop);
+                const screenPoints = points.map(p => worldToScreen(p.x, p.y));
+
+                if (isWireSelected) {
+                    ctx.strokeStyle = '#34C759';
+                    ctx.lineWidth = 7;
+                    ctx.shadowColor = '#34C759';
+                    ctx.shadowBlur = 20;
+                    drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
+                    ctx.shadowBlur = 0;
+                }
+                
+                ctx.strokeStyle = isWireSelected ? '#34C759' : (isWireActive ? '#34C759' : '#666');
+                ctx.lineWidth = 3;
+                drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
+                
+                if (isWireSelected) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 1;
+                    drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
+                }
+            });
+
+            if (isDraggingPin && pinDragDidMove) {
+                const fromWorldX = isDraggingPin.component.x + isDraggingPin.pin.x;
+                const fromWorldY = isDraggingPin.component.y + isDraggingPin.pin.y;
+                const mouseWorld = screenToWorld(mousePos.x, mousePos.y);
+
+                let actualFromWorld, actualToWorld;
+                let isSelfLoopTemp = false;
+
+                if (hoveredPin && hoveredPin.component === isDraggingPin.component) {
+                    isSelfLoopTemp = true;
+                }
+
+                if (isDraggingPin.type === 'input') {
+                    actualFromWorld = mouseWorld;
+                    actualToWorld = { x: fromWorldX, y: fromWorldY };
+                } else {
+                    actualFromWorld = { x: fromWorldX, y: fromWorldY };
+                    actualToWorld = mouseWorld;
+                }
+
+                const points = getOrthogonalPath(actualFromWorld.x, actualFromWorld.y, actualToWorld.x, actualToWorld.y, isSelfLoopTemp);
+                const screenPoints = points.map(p => worldToScreen(p.x, p.y));
+
+                ctx.strokeStyle = '#007AFF';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
+                ctx.setLineDash([]);
+            }
+        }
+
+        function removeWiresForPin(pinInfo) {
+            wires = wires.filter(wire => {
+                return !(wire.from.component === pinInfo.component && wire.from.pin === pinInfo.pin) &&
+                       !(wire.to.component === pinInfo.component && wire.to.pin === pinInfo.pin);
+            });
+            pinInfo.pin.connections =[];
+        }
+
+        function draw() {
+            const canvasWidth = canvas.width / dpr;
+            const canvasHeight = canvas.height / dpr;
+            
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            drawGrid();
+            
+            ctx.save();
+            ctx.translate(camera.x, camera.y);
+            ctx.scale(camera.zoom, camera.zoom);
+            
+            // Draw background labels/boxes first so they are under logic gates
+            components.filter(c => c.type === 'label_box').forEach(comp => comp.draw());
+            
+            // Draw logic components on top
+            components.filter(c => c.type !== 'label_box').forEach(comp => comp.draw());
+            
+            if (isSelectingBox) {
+                ctx.fillStyle = 'rgba(0, 122, 255, 0.15)';
+                ctx.strokeStyle = '#007AFF';
+                ctx.lineWidth = 1 / camera.zoom;
+                
+                const x = selectionBoxStart.x;
+                const y = selectionBoxStart.y;
+                const w = selectionBoxEnd.x - x;
+                const h = selectionBoxEnd.y - y;
+                
+                ctx.beginPath();
+                ctx.rect(x, y, w, h);
+                ctx.fill();
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+            
+            drawWires();
+            
+            ctx.restore();
+        }
+
+        function createComponent(type, worldX, worldY) {
+            const comp = new Component(type, worldX, worldY);
+            components.push(comp);
+            return comp;
+        }
+
+        function autoSpawnComponent(type) {
+            const rect = canvas.getBoundingClientRect();
+            const world = screenToWorld(rect.width / 2, rect.height / 2);
+            
+            const w = type === 'label_box' ? 250 : COMPONENT_WIDTH;
+            const h = type === 'label_box' ? 180 : COMPONENT_HEIGHT;
+            
+            let baseX = Math.round((world.x - w / 2) / GRID_SIZE) * GRID_SIZE;
+            let baseY = Math.round((world.y - h / 2) / GRID_SIZE) * GRID_SIZE;
+            let offset = 0;
+            
+            while (components.some(c => Math.abs(c.x - (baseX + offset)) < 5 && Math.abs(c.y - (baseY + offset)) < 5)) {
+                offset += GRID_SIZE;
+            }
+            
+            createComponent(type, baseX + offset, baseY + offset);
+            draw();
+        }
+
+        function updateLogic() {
+            let changed = true;
+            let attempts = 0;
+            const maxAttempts = 1000;
+
+            while (changed && attempts < maxAttempts) {
+                changed = false;
+                
+                const prevStates = new Map();
+                components.forEach(c => prevStates.set(c.id, c.state));
+                
+                components.filter(c => c.type === 'gate' || c.type === 'not_gate').forEach(comp => comp.updateState());
+                components.filter(c => c.type === 'output').forEach(comp => comp.updateState());
+                
+                components.forEach(c => {
+                    if (c.state !== prevStates.get(c.id)) {
+                        changed = true;
+                    }
+                });
+                
+                attempts++;
+            }
+            
+            draw();
+        }
+
+        function openLabelEditor(comp) {
+            editingComponent = comp;
+            labelEditor.value = comp.label;
+            labelEditor.style.display = 'block';
+            
+            const screenPos = worldToScreen(comp.x + 12, comp.y + 12);
+            
+            labelEditor.style.left = screenPos.x + 'px';
+            labelEditor.style.top = (screenPos.y - 4) + 'px';
+            labelEditor.style.transform = `scale(${camera.zoom})`;
+            labelEditor.style.transformOrigin = 'left top';
+            
+            labelEditor.focus();
+            labelEditor.select();
+        }
+
+        labelEditor.addEventListener('blur', () => {
+            if (editingComponent) {
+                editingComponent.label = labelEditor.value || 'Label';
+                editingComponent = null;
+                labelEditor.style.display = 'none';
+                draw();
+            }
         });
-      }
 
-      function drawElement(g, el) {
-        // iOS toggle style: square with no border radius, dark background
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        rect.setAttribute("x", "-24"); rect.setAttribute("y", "-20");
-        rect.setAttribute("width", "48"); rect.setAttribute("height", "40");
-        rect.setAttribute("rx", "0"); // No border radius
-        rect.setAttribute("fill", "#1e1e30");
-        rect.setAttribute("stroke", "#444");
-        rect.setAttribute("stroke-width", "2");
-        g.appendChild(rect);
-        
-        if (el.type === 'input') {
-          const fill = el.value ? '#4ade80' : '#3f3f5c';
-          const inner = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-          inner.setAttribute("x", "-18"); inner.setAttribute("y", "-14");
-          inner.setAttribute("width", "36"); inner.setAttribute("height", "28");
-          inner.setAttribute("rx", "0");
-          inner.setAttribute("fill", fill);
-          g.appendChild(inner);
-          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          text.setAttribute("text-anchor", "middle"); text.setAttribute("dy", "5");
-          text.setAttribute("fill", "white"); text.setAttribute("font-weight", "bold");
-          text.setAttribute("font-size", "14");
-          text.textContent = el.value ? "1" : "0";
-          g.appendChild(text);
-        } else if (el.type === 'output') {
-          const fill = el.state ? '#f97316' : '#3f3f5c';
-          const inner = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-          inner.setAttribute("x", "-18"); inner.setAttribute("y", "-14");
-          inner.setAttribute("width", "36"); inner.setAttribute("height", "28");
-          inner.setAttribute("rx", "0");
-          inner.setAttribute("fill", fill);
-          g.appendChild(inner);
-          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          text.setAttribute("text-anchor", "middle"); text.setAttribute("dy", "5");
-          text.setAttribute("fill", "white"); text.setAttribute("font-size", "13");
-          text.textContent = el.state ? "1" : "0";
-          g.appendChild(text);
-        } else if (el.type === 'and') {
-          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          text.setAttribute("text-anchor", "middle"); text.setAttribute("dy", "5");
-          text.setAttribute("fill", "#93c5fd"); text.setAttribute("font-weight", "bold");
-          text.setAttribute("font-size", "16"); text.textContent = "&";
-          g.appendChild(text);
-        } else if (el.type === 'or') {
-          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          text.setAttribute("text-anchor", "middle"); text.setAttribute("dy", "5");
-          text.setAttribute("fill", "#c4b5fd"); text.setAttribute("font-weight", "bold");
-          text.setAttribute("font-size", "14"); text.textContent = "≥1";
-          g.appendChild(text);
-        } else if (el.type === 'not') {
-          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          text.setAttribute("text-anchor", "middle"); text.setAttribute("dy", "5");
-          text.setAttribute("fill", "#fca5a5"); text.setAttribute("font-weight", "bold");
-          text.setAttribute("font-size", "13"); text.textContent = "NOT";
-          g.appendChild(text);
-        }
-      }
+        labelEditor.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                labelEditor.blur();
+            }
+            e.stopPropagation();
+        });
 
-      function startPinDrag(elementId, portType, e) {
-        pinDragStart = {
-          elementId,
-          portType,
-          clientX: e.clientX,
-          clientY: e.clientY
-        };
-        tempWireEnd = getSVGPoint(e);
-        container.classList.add('wire-dragging');
-        renderAll();
-      }
+        document.addEventListener('keydown', (e) => {
+            if (document.activeElement === labelEditor) {
+                return; // Let user type freely
+            }
 
-      function finishPinDrag(targetElementId, targetPortType) {
-        if (!pinDragStart) return;
-        if (pinDragStart.elementId === targetElementId) {
-          cancelPinDrag();
-          return;
-        }
-        if (pinDragStart.portType === 'output' && targetPortType === 'input') {
-          const exists = wires.some(w => w.fromElement === pinDragStart.elementId && w.toElement === targetElementId);
-          if (!exists) {
-            wires.push({ id: nextId++, fromElement: pinDragStart.elementId, toElement: targetElementId });
-            evaluateCircuit();
-          }
-        }
-        cancelPinDrag();
-        renderAll();
-      }
+            if (e.key.toLowerCase() === 'v' && !e.metaKey && !e.ctrlKey) {
+                isSelectMode = false;
+                updateModeUI();
+                draw();
+                return;
+            }
 
-      function cancelPinDrag() {
-        pinDragStart = null;
-        tempWireEnd = null;
-        container.classList.remove('wire-dragging');
-      }
+            if (e.key.toLowerCase() === 's' && !e.metaKey && !e.ctrlKey) {
+                isSelectMode = true;
+                updateModeUI();
+                draw();
+                return;
+            }
 
-      function getSVGPoint(e) {
-        const pt = svg.createSVGPoint();
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        return pt.matrixTransform(svg.getScreenCTM().inverse());
-      }
+            // Copy Action
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
+                e.preventDefault();
+                if (selectedComponents.length > 0) {
+                    clipboard = {
+                        components: selectedComponents.map(c => ({
+                            id: c.id,
+                            type: c.type,
+                            x: c.x,
+                            y: c.y,
+                            width: c.width,
+                            height: c.height,
+                            label: c.label,
+                            state: c.state
+                        })),
+                        wires:[]
+                    };
+                    
+                    // Capture wires between selected components
+                    wires.forEach(w => {
+                        if (selectedComponents.includes(w.from.component) && selectedComponents.includes(w.to.component)) {
+                            clipboard.wires.push({
+                                fromCompId: w.from.component.id,
+                                fromType: w.from.type,
+                                fromPinIndex: w.from.component[w.from.type + 's'].indexOf(w.from.pin),
+                                toCompId: w.to.component.id,
+                                toType: w.to.type,
+                                toPinIndex: w.to.component[w.to.type + 's'].indexOf(w.to.pin)
+                            });
+                        }
+                    });
+                    pasteOffset = GRID_SIZE; // reset paste offset
+                }
+                return;
+            }
 
-      function toggleInput(id) {
-        const el = elements.find(e=>e.id===id);
-        if (el && el.type==='input') {
-          el.value = el.value ? 0 : 1;
-          evaluateCircuit();
-          renderAll();
-        }
-      }
+            // Paste Action
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
+                e.preventDefault();
+                if (clipboard && clipboard.components.length > 0) {
+                    const idMap = new Map();
+                    selectedComponents =[]; // Clear current selection to focus on newly pasted ones
+                    
+                    // Recreate components
+                    clipboard.components.forEach(cc => {
+                        const newX = Math.round((cc.x + pasteOffset) / GRID_SIZE) * GRID_SIZE;
+                        const newY = Math.round((cc.y + pasteOffset) / GRID_SIZE) * GRID_SIZE;
+                        
+                        const newComp = new Component(cc.type, newX, newY);
+                        newComp.width = cc.width;
+                        newComp.height = cc.height;
+                        if (cc.type === 'label_box') newComp.label = cc.label;
+                        if (cc.type === 'input') newComp.state = cc.state;
+                        
+                        components.push(newComp);
+                        selectedComponents.push(newComp);
+                        idMap.set(cc.id, newComp);
+                    });
+                    
+                    // Recreate wires between the duplicated components
+                    clipboard.wires.forEach(cw => {
+                        const fromComp = idMap.get(cw.fromCompId);
+                        const toComp = idMap.get(cw.toCompId);
+                        if (fromComp && toComp) {
+                            const fromPin = fromComp[cw.fromType + 's'][cw.fromPinIndex];
+                            const toPin = toComp[cw.toType + 's'][cw.toPinIndex];
+                            
+                            if (fromPin && toPin) {
+                                wires.push({
+                                    from: { pin: fromPin, type: cw.fromType, component: fromComp },
+                                    to: { pin: toPin, type: cw.toType, component: toComp }
+                                });
+                                toPin.connections.push(fromComp);
+                            }
+                        }
+                    });
+                    
+                    pasteOffset += GRID_SIZE; // shift next paste
+                    updateLogic();
+                    draw();
+                }
+                return;
+            }
 
-      // Canvas pan/zoom events
-      svg.addEventListener('mousedown', (e) => {
-        if (e.target === svg || e.target === gridRect) {
-          isPanning = true;
-          panStart = { x: e.clientX, y: e.clientY };
-          container.classList.add('grabbing');
-          selectedElementIds.clear();
-          renderAll();
-        }
-      });
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
+                e.preventDefault();
+                selectedComponents = [...components];
+                selectedPin = null;
+                selectedWire = null;
+                if (popupVisible) {
+                    popup.classList.remove('show');
+                    popupVisible = false;
+                    popupSourcePin = null;
+                }
+                draw();
+                return;
+            }
 
-      window.addEventListener('mousemove', (e) => {
-        if (isPanning) {
-          const dx = e.clientX - panStart.x;
-          const dy = e.clientY - panStart.y;
-          groupTransform.x += dx;
-          groupTransform.y += dy;
-          panStart = { x: e.clientX, y: e.clientY };
-          updateTransform();
-        }
-        if (isDraggingElement && dragElementId) {
-          const pos = getSVGPoint(e);
-          const el = elements.find(e=>e.id===dragElementId);
-          if (el) {
-            el.x = pos.x - dragOffset.x;
-            el.y = pos.y - dragOffset.y;
-            renderAll();
-          }
-        }
-        if (pinDragStart) {
-          tempWireEnd = getSVGPoint(e);
-          renderAll();
-        }
-      });
+            if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedPin || selectedWire || selectedComponents.length > 0)) {
+                e.preventDefault();
+                
+                if (selectedPin) {
+                    removeWiresForPin(selectedPin);
+                    selectedPin = null;
+                } else if (selectedWire) {
+                    wires = wires.filter(wire => wire !== selectedWire);
+                    selectedWire = null;
+                } else if (selectedComponents.length > 0) {
+                    selectedComponents.forEach(comp => {
+                        wires = wires.filter(wire => wire.from.component !== comp && wire.to.component !== comp);
+                    });
+                    components = components.filter(c => !selectedComponents.includes(c));
+                    selectedComponents =[];
+                }
+                updateLogic();
+                draw();
+                return;
+            }
 
-      window.addEventListener('mouseup', (e) => {
-        if (isPanning) {
-          isPanning = false;
-          container.classList.remove('grabbing');
-        }
-        if (isDraggingElement) {
-          isDraggingElement = false;
-          dragElementId = null;
-        }
-        if (pinDragStart && !e.target.closest('.input-pin')) {
-          cancelPinDrag();
-          renderAll();
-        }
-      });
+            if (popupVisible) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const itemsCount = popup.querySelectorAll('.popup-item').length;
+                    popupSelectedIndex = (popupSelectedIndex + 1) % itemsCount;
+                    updatePopupSelection();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const itemsCount = popup.querySelectorAll('.popup-item').length;
+                    popupSelectedIndex = (popupSelectedIndex - 1 + itemsCount) % itemsCount;
+                    updatePopupSelection();
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    selectPopupItem();
+                } else if (e.key === 'Escape') {
+                    popup.classList.remove('show');
+                    popupVisible = false;
+                    popupSourcePin = null;
+                }
+                return;
+            }
 
-      // Trackpad zoom
-      svg.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.min(3, Math.max(0.2, scale * delta));
-        
-        const mousePoint = getSVGPoint(e);
-        const worldX = (mousePoint.x - groupTransform.x) / scale;
-        const worldY = (mousePoint.y - groupTransform.y) / scale;
-        
-        scale = newScale;
-        groupTransform.x = mousePoint.x - worldX * scale;
-        groupTransform.y = mousePoint.y - worldY * scale;
-        
-        updateTransform();
-      }, { passive: false });
+            if (e.key === '1') {
+                autoSpawnComponent('input');
+            } else if (e.key === '2') {
+                autoSpawnComponent('output');
+            } else if (e.key === '3') {
+                autoSpawnComponent('gate');
+            } else if (e.key === '4') {
+                autoSpawnComponent('not_gate');
+            } else if (e.key === '5') {
+                autoSpawnComponent('label_box');
+            } else if (e.key === 'Escape') {
+                selectedPin = null;
+                selectedWire = null;
+                selectedComponents =[];
+                isDraggingPin = null;
+                hoveredPin = null;
+                draw();
+            }
+        });
 
-      // Click to place elements
-      svg.addEventListener('click', (e) => {
-        if (isPanning || isDraggingElement) return;
-        if (e.target === svg || e.target === gridRect) {
-          if (currentTool !== 'wire') {
-            const pos = getSVGPoint(e);
-            elements.push(createElement(currentTool, pos.x, pos.y));
-            evaluateCircuit();
-            renderAll();
-          }
-          selectedElementIds.clear();
-          renderAll();
+        function handleComponentClick(comp, world, screenX, screenY, e) {
+            const isMultiSelectModifier = e.shiftKey || e.metaKey || e.ctrlKey;
+            
+            if (isMultiSelectModifier) {
+                if (selectedComponents.includes(comp)) {
+                    selectedComponents = selectedComponents.filter(c => c !== comp);
+                    isDraggingComponent = null;
+                } else {
+                    selectedComponents.push(comp);
+                    isDraggingComponent = comp;
+                }
+                
+                if (comp.type === 'input' && selectedComponents.includes(comp)) {
+                    comp.state = !comp.state;
+                    updateLogic();
+                }
+            } else {
+                if (!selectedComponents.includes(comp)) {
+                    selectedComponents = [comp];
+                }
+                isDraggingComponent = comp;
+                
+                if (comp.type === 'input') {
+                    comp.state = !comp.state;
+                    updateLogic();
+                }
+            }
+
+            selectedPin = null;
+            selectedWire = null;
+            
+            if (isDraggingComponent) {
+                dragStartWorld = { x: world.x, y: world.y };
+                dragStartMousePos = { x: screenX, y: screenY };
+                selectedComponentsInitPos = selectedComponents.map(c => ({ id: c.id, x: c.x, y: c.y }));
+                componentDragDidMove = false;
+            }
+            
+            draw();
         }
-      });
 
-      // Keyboard shortcuts
-      window.addEventListener('keydown', (e) => {
-        const key = e.key.toLowerCase();
-        const meta = e.metaKey || e.ctrlKey;
-        
-        if (meta && key === 'a') {
-          e.preventDefault();
-          selectedElementIds = new Set(elements.map(el => el.id));
-          renderAll();
+        canvas.addEventListener('mousedown', (e) => {
+            if (document.activeElement === labelEditor && e.target !== labelEditor) {
+                labelEditor.blur();
+            }
+
+            if (popupVisible) {
+                return;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+            const world = screenToWorld(screenX, screenY);
+            
+            mousePos = { x: screenX, y: screenY };
+
+            // 1. Check Pins
+            for (let comp of [...components].reverse()) {
+                const pinInfo = comp.getPinAt(world.x, world.y);
+                if (pinInfo) {
+                    isDraggingPin = pinInfo;
+                    dragStartMousePos = { x: screenX, y: screenY };
+                    pinDragDidMove = false;
+                    
+                    selectedPin = pinInfo;
+                    selectedWire = null;
+                    selectedComponents =[];
+                    draw();
+                    return;
+                }
+            }
+
+            // 2. Check Wires
+            for (let wire of wires) {
+                if (isPointNearWire(world.x, world.y, wire)) {
+                    selectedWire = wire;
+                    selectedPin = null;
+                    selectedComponents =[];
+                    isDraggingPin = null;
+                    draw();
+                    return;
+                }
+            }
+
+            // 3. Check Box Resizing Handles
+            for (let comp of [...components].reverse()) {
+                if (comp.type === 'label_box' && comp.getResizeHandleAt(world.x, world.y)) {
+                    isResizingComponent = comp;
+                    dragStartWorld = { x: world.x, y: world.y };
+                    resizeStart = { w: comp.width, h: comp.height };
+                    selectedPin = null;
+                    selectedWire = null;
+                    if (!selectedComponents.includes(comp)) {
+                        selectedComponents = [comp];
+                    }
+                    draw();
+                    return;
+                }
+            }
+
+            // 4. Check Logic Components
+            const logicComps = components.filter(c => c.type !== 'label_box');
+            for (let comp of [...logicComps].reverse()) {
+                if (comp.containsPoint(world.x, world.y)) {
+                    handleComponentClick(comp, world, screenX, screenY, e);
+                    return;
+                }
+            }
+
+            // 5. Check Label Boxes background
+            const boxComps = components.filter(c => c.type === 'label_box');
+            for (let comp of [...boxComps].reverse()) {
+                if (comp.containsPoint(world.x, world.y)) {
+                    handleComponentClick(comp, world, screenX, screenY, e);
+                    return;
+                }
+            }
+
+            // 6. Canvas Operations (Box select or Pan)
+            if (isSelectMode || e.shiftKey || e.metaKey || e.ctrlKey) {
+                isSelectingBox = true;
+                selectionBoxStart = { x: world.x, y: world.y };
+                selectionBoxEnd = { x: world.x, y: world.y };
+                selectedPin = null;
+                selectedWire = null;
+                if (!e.shiftKey && !e.metaKey && !e.ctrlKey) {
+                    selectedComponents =[];
+                }
+                draw();
+                return;
+            }
+
+            isDraggingCanvas = true;
+            dragStart = { x: e.clientX - camera.x, y: e.clientY - camera.y };
+            
+            selectedPin = null;
+            selectedWire = null;
+            selectedComponents =[];
+            draw();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+            const world = screenToWorld(screenX, screenY);
+            
+            mousePos = { x: screenX, y: screenY };
+
+            // Hover pin checks
+            hoveredPin = null;
+            for (let comp of components) {
+                const pinInfo = comp.getPinAt(world.x, world.y);
+                if (pinInfo) {
+                    if (isDraggingPin) {
+                        if (pinInfo.type !== isDraggingPin.type) {
+                            hoveredPin = pinInfo;
+                        }
+                    } else {
+                        hoveredPin = pinInfo;
+                    }
+                    break;
+                }
+            }
+
+            // Cursor updates
+            let isHoveringResize = false;
+            for (let comp of components) {
+                if (comp.type === 'label_box' && comp.getResizeHandleAt(world.x, world.y)) {
+                    isHoveringResize = true;
+                    break;
+                }
+            }
+
+            if (isResizingComponent || isHoveringResize) {
+                canvas.style.cursor = 'nwse-resize';
+            } else if (isDraggingCanvas) {
+                canvas.style.cursor = 'grabbing';
+            } else if (isSelectMode && !isDraggingPin && !isDraggingComponent) {
+                canvas.style.cursor = 'crosshair';
+            } else {
+                canvas.style.cursor = 'grab';
+            }
+
+            // Drag operations
+            if (isSelectingBox) {
+                selectionBoxEnd = { x: world.x, y: world.y };
+                draw();
+            } else if (isResizingComponent) {
+                const rawWidth = Math.max(100, resizeStart.w + (world.x - dragStartWorld.x));
+                const rawHeight = Math.max(60, resizeStart.h + (world.y - dragStartWorld.y));
+                isResizingComponent.width = Math.max(GRID_SIZE * 3, Math.round(rawWidth / GRID_SIZE) * GRID_SIZE);
+                isResizingComponent.height = Math.max(GRID_SIZE * 2, Math.round(rawHeight / GRID_SIZE) * GRID_SIZE);
+                draw();
+            } else if (isDraggingCanvas) {
+                camera.x = e.clientX - dragStart.x;
+                camera.y = e.clientY - dragStart.y;
+                draw();
+            } else if (isDraggingComponent) {
+                const deltaX = world.x - dragStartWorld.x;
+                const deltaY = world.y - dragStartWorld.y;
+                
+                if (Math.abs(screenX - dragStartMousePos.x) > 3 || Math.abs(screenY - dragStartMousePos.y) > 3) {
+                    componentDragDidMove = true;
+                }
+                
+                selectedComponents.forEach(c => {
+                    const initPos = selectedComponentsInitPos.find(pos => pos.id === c.id);
+                    if (initPos) {
+                        c.x = Math.round((initPos.x + deltaX) / GRID_SIZE) * GRID_SIZE;
+                        c.y = Math.round((initPos.y + deltaY) / GRID_SIZE) * GRID_SIZE;
+                    }
+                });
+                draw();
+            } else if (isDraggingPin) {
+                if (Math.hypot(screenX - dragStartMousePos.x, screenY - dragStartMousePos.y) > 5) {
+                    pinDragDidMove = true;
+                }
+                draw();
+            } else {
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+            const world = screenToWorld(screenX, screenY);
+
+            if (isSelectingBox) {
+                const dx = Math.abs(selectionBoxEnd.x - selectionBoxStart.x) * camera.zoom;
+                const dy = Math.abs(selectionBoxEnd.y - selectionBoxStart.y) * camera.zoom;
+
+                if (dx > 3 || dy > 3) {
+                    const minX = Math.min(selectionBoxStart.x, selectionBoxEnd.x);
+                    const maxX = Math.max(selectionBoxStart.x, selectionBoxEnd.x);
+                    const minY = Math.min(selectionBoxStart.y, selectionBoxEnd.y);
+                    const maxY = Math.max(selectionBoxStart.y, selectionBoxEnd.y);
+                    
+                    components.forEach(comp => {
+                        const compRight = comp.x + comp.width;
+                        const compBottom = comp.y + comp.height;
+                        
+                        if (comp.x <= maxX && compRight >= minX &&
+                            comp.y <= maxY && compBottom >= minY) {
+                            if (!selectedComponents.includes(comp)) {
+                                selectedComponents.push(comp);
+                            }
+                        }
+                    });
+                }
+                
+                isSelectingBox = false;
+                draw();
+            }
+
+            if (isDraggingPin) {
+                if (pinDragDidMove) {
+                    let targetPin = null;
+                    for (let comp of components) {
+                        const pinInfo = comp.getPinAt(world.x, world.y);
+                        if (pinInfo && pinInfo.type !== isDraggingPin.type) {
+                            targetPin = pinInfo;
+                            break;
+                        }
+                    }
+
+                    if (targetPin) {
+                        const fromPin = isDraggingPin.type === 'output' ? isDraggingPin : targetPin;
+                        const toPin = isDraggingPin.type === 'input' ? isDraggingPin : targetPin;
+                        
+                        const wireExists = wires.some(w => w.from.component === fromPin.component && 
+                                                           w.from.pin === fromPin.pin && 
+                                                           w.to.component === toPin.component && 
+                                                           w.to.pin === toPin.pin);
+                        if (!wireExists) {
+                            wires.push({
+                                from: fromPin,
+                                to: toPin
+                            });
+                            toPin.pin.connections.push(fromPin.component);
+                            updateLogic();
+                        }
+                    } else {
+                        popup.style.left = screenX + 'px';
+                        popup.style.top = screenY + 'px';
+                        popup.classList.add('show');
+                        popupVisible = true;
+                        popupSelectedIndex = 0;
+                        popupSourcePin = isDraggingPin;
+                        updatePopupSelection();
+                    }
+                }
+                
+                isDraggingPin = null;
+                hoveredPin = null;
+            }
+
+            if (isDraggingComponent) {
+                if (!componentDragDidMove && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+                    selectedComponents = [isDraggingComponent];
+                }
+                isDraggingComponent = null;
+            }
+
+            isResizingComponent = null;
+            isDraggingCanvas = false;
+            canvas.style.cursor = '';
+            draw();
+        });
+
+        canvas.addEventListener('dblclick', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+            const world = screenToWorld(screenX, screenY);
+            
+            for (let comp of [...components].reverse()) {
+                if (comp.type === 'label_box' && comp.containsPoint(world.x, world.y)) {
+                    openLabelEditor(comp);
+                    return;
+                }
+            }
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            if (document.activeElement === labelEditor) {
+                labelEditor.blur();
+            }
+            
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const worldBefore = screenToWorld(mouseX, mouseY);
+            
+            const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+            camera.zoom *= zoomFactor;
+            camera.zoom = Math.max(0.1, Math.min(5, camera.zoom));
+            
+            const worldAfter = screenToWorld(mouseX, mouseY);
+            
+            camera.x += (worldAfter.x - worldBefore.x) * camera.zoom;
+            camera.y += (worldAfter.y - worldBefore.y) * camera.zoom;
+            
+            zoomIndicator.textContent = Math.round(camera.zoom * 100) + '%';
+            draw();
+        }, { passive: false });
+
+        function updatePopupSelection() {
+            const items = popup.querySelectorAll('.popup-item');
+            items.forEach((item, i) => {
+                item.classList.toggle('selected', i === popupSelectedIndex);
+            });
         }
-        if ((key === 'delete' || key === 'backspace') && selectedElementIds.size > 0) {
-          e.preventDefault();
-          elements = elements.filter(el => !selectedElementIds.has(el.id));
-          wires = wires.filter(w => !selectedElementIds.has(w.fromElement) && !selectedElementIds.has(w.toElement));
-          selectedElementIds.clear();
-          evaluateCircuit();
-          renderAll();
+
+        function selectPopupItem() {
+            const items = popup.querySelectorAll('.popup-item');
+            const selectedType = items[popupSelectedIndex].dataset.type;
+            
+            const rect = popup.getBoundingClientRect();
+            const world = screenToWorld(rect.left, rect.top);
+            
+            const snappedX = Math.round(world.x / GRID_SIZE) * GRID_SIZE;
+            const snappedY = Math.round(world.y / GRID_SIZE) * GRID_SIZE;
+            
+            const newComp = createComponent(selectedType, snappedX, snappedY);
+            
+            if (popupSourcePin) {
+                if (popupSourcePin.type === 'output' && newComp.inputs.length > 0) {
+                    const targetPin = { pin: newComp.inputs[0], type: 'input', component: newComp };
+                    wires.push({
+                        from: popupSourcePin,
+                        to: targetPin
+                    });
+                    targetPin.pin.connections.push(popupSourcePin.component);
+                } else if (popupSourcePin.type === 'input' && newComp.outputs.length > 0) {
+                    const sourcePin = { pin: newComp.outputs[0], type: 'output', component: newComp };
+                    wires.push({
+                        from: sourcePin,
+                        to: popupSourcePin
+                    });
+                    popupSourcePin.pin.connections.push(newComp);
+                }
+                updateLogic();
+            }
+            
+            popup.classList.remove('show');
+            popupVisible = false;
+            popupSourcePin = null;
+            draw();
         }
-        if (key === 'i') { currentTool = 'input'; updateToolUI(); e.preventDefault(); }
-        if (key === 'o') { currentTool = 'output'; updateToolUI(); e.preventDefault(); }
-        if (key === 'a' && !meta) { currentTool = 'and'; updateToolUI(); e.preventDefault(); }
-        if (key === 'r') { currentTool = 'or'; updateToolUI(); e.preventDefault(); }
-        if (key === 'n') { currentTool = 'not'; updateToolUI(); e.preventDefault(); }
-        if (key === 'w') { currentTool = 'wire'; updateToolUI(); e.preventDefault(); }
-        if (key === 'escape') {
-          cancelPinDrag();
-          selectedElementIds.clear();
-          renderAll();
+
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.type;
+                if (type) {
+                    autoSpawnComponent(type);
+                }
+                btn.blur();
+            });
+        });
+
+        const modePanBtn = document.getElementById('modePan');
+        const modeSelectBtn = document.getElementById('modeSelect');
+
+        function updateModeUI() {
+            if (modePanBtn && modeSelectBtn) {
+                modePanBtn.classList.toggle('active', !isSelectMode);
+                modeSelectBtn.classList.toggle('active', isSelectMode);
+            }
         }
-      });
 
-      function updateToolUI() {
-        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-        const map = {input:'btn-input', output:'btn-output', and:'btn-and', or:'btn-or', not:'btn-not', wire:'btn-wire'};
-        if (map[currentTool]) document.getElementById(map[currentTool]).classList.add('active');
-      }
+        if (modePanBtn) {
+            modePanBtn.addEventListener('click', () => {
+                isSelectMode = false;
+                updateModeUI();
+            });
+        }
 
-      document.getElementById('btn-input').addEventListener('click', ()=>{ currentTool='input'; updateToolUI(); });
-      document.getElementById('btn-output').addEventListener('click', ()=>{ currentTool='output'; updateToolUI(); });
-      document.getElementById('btn-and').addEventListener('click', ()=>{ currentTool='and'; updateToolUI(); });
-      document.getElementById('btn-or').addEventListener('click', ()=>{ currentTool='or'; updateToolUI(); });
-      document.getElementById('btn-not').addEventListener('click', ()=>{ currentTool='not'; updateToolUI(); });
-      document.getElementById('btn-wire').addEventListener('click', ()=>{ currentTool='wire'; updateToolUI(); });
+        if (modeSelectBtn) {
+            modeSelectBtn.addEventListener('click', () => {
+                isSelectMode = true;
+                updateModeUI();
+            });
+        }
 
-      // Demo
-      elements.push(createElement('input', -200, -60));
-      elements.push(createElement('input', -200, 60));
-      elements.push(createElement('and', 0, 0));
-      elements.push(createElement('output', 200, 0));
-      wires.push({id: nextId++, fromElement:1, toElement:3});
-      wires.push({id: nextId++, fromElement:2, toElement:3});
-      wires.push({id: nextId++, fromElement:3, toElement:4});
-      
-      evaluateCircuit();
-      updateTransform();
-      updateToolUI();
-      renderAll();
-    })();
-  </script>
+        document.querySelectorAll('.popup-item').forEach((item, index) => {
+            item.addEventListener('mouseenter', () => {
+                popupSelectedIndex = index;
+                updatePopupSelection();
+            });
+            item.addEventListener('click', selectPopupItem);
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            if (popupVisible && !popup.contains(e.target)) {
+                popup.classList.remove('show');
+                popupVisible = false;
+                popupSourcePin = null;
+            }
+        });
+    </script>
 </body>
 </html>
