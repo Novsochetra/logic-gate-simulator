@@ -33,6 +33,22 @@
             cursor: grabbing;
         }
 
+        /* Minimap Styles */
+        #minimap {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            background: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            cursor: crosshair;
+        }
+
         .nav-bar {
             position: fixed;
             bottom: 20px;
@@ -214,6 +230,7 @@
 </head>
 <body>
     <canvas id="canvas"></canvas>
+    <canvas id="minimap"></canvas>
 
     <div class="top-left-controls">
         <button class="sim-control stopped" id="toggleSimBtn">▶ Play Simulation</button>
@@ -268,6 +285,8 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimap');
+        const minimapCtx = minimapCanvas.getContext('2d');
         const popup = document.getElementById('componentPopup');
         const zoomIndicator = document.getElementById('zoomIndicator');
         const labelEditor = document.getElementById('labelEditor');
@@ -288,6 +307,10 @@
         let wires =[];
         let nextId = 1;
         let dpr = window.devicePixelRatio || 1;
+
+        // Minimap State
+        let isDraggingMinimap = false;
+        let minimapConfig = { mapMinX: 0, mapMinY: 0, mapScale: 1, offsetX: 0, offsetY: 0 };
 
         // Interaction state
         let isSelectMode = false;
@@ -671,6 +694,14 @@
             canvas.height = rect.height * dpr;
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.scale(dpr, dpr);
+
+            if (minimapCanvas && minimapCtx) {
+                minimapCanvas.width = 200 * dpr;
+                minimapCanvas.height = 150 * dpr;
+                minimapCtx.setTransform(1, 0, 0, 1, 0, 0);
+                minimapCtx.scale(dpr, dpr);
+            }
+
             draw();
         }
 
@@ -927,6 +958,129 @@
             pinInfo.pin.connections =[];
         }
 
+        function drawMinimap() {
+            if (!minimapCtx) return;
+            const mmW = 200;
+            const mmH = 150;
+            
+            minimapCtx.clearRect(0, 0, mmW, mmH);
+            
+            const visMinX = -camera.x / camera.zoom;
+            const visMinY = -camera.y / camera.zoom;
+            const visMaxX = (canvas.width / dpr - camera.x) / camera.zoom;
+            const visMaxY = (canvas.height / dpr - camera.y) / camera.zoom;
+            
+            let compMinX = visMinX;
+            let compMinY = visMinY;
+            let compMaxX = visMaxX;
+            let compMaxY = visMaxY;
+            
+            components.forEach(c => {
+                compMinX = Math.min(compMinX, c.x);
+                compMinY = Math.min(compMinY, c.y);
+                compMaxX = Math.max(compMaxX, c.x + c.width);
+                compMaxY = Math.max(compMaxY, c.y + c.height);
+            });
+            
+            wires.forEach(w => {
+                if (w.waypoints) {
+                    w.waypoints.forEach(wp => {
+                        compMinX = Math.min(compMinX, wp.x);
+                        compMinY = Math.min(compMinY, wp.y);
+                        compMaxX = Math.max(compMaxX, wp.x);
+                        compMaxY = Math.max(compMaxY, wp.y);
+                    });
+                }
+            });
+            
+            const padding = 200; 
+            minimapConfig.mapMinX = compMinX - padding;
+            minimapConfig.mapMinY = compMinY - padding;
+            const mapMaxX = compMaxX + padding;
+            const mapMaxY = compMaxY + padding;
+            
+            const mapWidth = mapMaxX - minimapConfig.mapMinX;
+            const mapHeight = mapMaxY - minimapConfig.mapMinY;
+            
+            const scaleX = mmW / mapWidth;
+            const scaleY = mmH / mapHeight;
+            minimapConfig.mapScale = Math.min(scaleX, scaleY);
+            
+            minimapConfig.offsetX = (mmW - mapWidth * minimapConfig.mapScale) / 2;
+            minimapConfig.offsetY = (mmH - mapHeight * minimapConfig.mapScale) / 2;
+            
+            function mmX(wx) { return (wx - minimapConfig.mapMinX) * minimapConfig.mapScale + minimapConfig.offsetX; }
+            function mmY(wy) { return (wy - minimapConfig.mapMinY) * minimapConfig.mapScale + minimapConfig.offsetY; }
+            
+            // Draw Map Grid
+            minimapCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            minimapCtx.lineWidth = 1;
+            minimapCtx.beginPath();
+            const gridSpacing = GRID_SIZE * minimapConfig.mapScale;
+            if (gridSpacing > 3) {
+                const startX = mmX(Math.floor(minimapConfig.mapMinX / GRID_SIZE) * GRID_SIZE);
+                const startY = mmY(Math.floor(minimapConfig.mapMinY / GRID_SIZE) * GRID_SIZE);
+                for (let x = startX; x < mmW; x += gridSpacing) {
+                    minimapCtx.moveTo(x, 0); minimapCtx.lineTo(x, mmH);
+                }
+                for (let y = startY; y < mmH; y += gridSpacing) {
+                    minimapCtx.moveTo(0, y); minimapCtx.lineTo(mmW, y);
+                }
+                minimapCtx.stroke();
+            }
+            
+            // Draw Wires
+            minimapCtx.lineWidth = 1.5;
+            wires.forEach(w => {
+                const path = getWirePath(w);
+                if (path.length > 0) {
+                    minimapCtx.beginPath();
+                    minimapCtx.strokeStyle = w.from.component.state ? '#34C759' : '#666';
+                    minimapCtx.moveTo(mmX(path[0].x), mmY(path[0].y));
+                    for (let i = 1; i < path.length; i++) {
+                        minimapCtx.lineTo(mmX(path[i].x), mmY(path[i].y));
+                    }
+                    minimapCtx.stroke();
+                }
+            });
+            
+            // Draw Components
+            components.forEach(c => {
+                if (c.type === 'label_box') {
+                    minimapCtx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                    minimapCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                } else if (c.type === 'input' || c.type === 'output') {
+                    minimapCtx.fillStyle = c.state ? '#34C759' : '#3A3A3C';
+                    minimapCtx.strokeStyle = 'transparent';
+                } else {
+                    minimapCtx.fillStyle = c.state ? '#5856D6' : '#2C2C2E';
+                    minimapCtx.strokeStyle = c.state ? '#7D7AFF' : '#48484A';
+                }
+                
+                const x = mmX(c.x);
+                const y = mmY(c.y);
+                const w = c.width * minimapConfig.mapScale;
+                const h = c.height * minimapConfig.mapScale;
+                
+                minimapCtx.fillRect(x, y, w, h);
+                if (minimapCtx.strokeStyle !== 'transparent') {
+                    minimapCtx.lineWidth = 1;
+                    minimapCtx.strokeRect(x, y, w, h);
+                }
+            });
+            
+            // Draw Viewport Area
+            const vx = mmX(visMinX);
+            const vy = mmY(visMinY);
+            const vw = (visMaxX - visMinX) * minimapConfig.mapScale;
+            const vh = (visMaxY - visMinY) * minimapConfig.mapScale;
+            minimapCtx.fillStyle = 'rgba(0, 122, 255, 0.1)';
+            minimapCtx.strokeStyle = '#007AFF';
+            minimapCtx.lineWidth = 2;
+            minimapCtx.fillRect(vx, vy, vw, vh);
+            minimapCtx.strokeRect(vx, vy, vw, vh);
+        }
+
         function draw() {
             const canvasWidth = canvas.width / dpr;
             const canvasHeight = canvas.height / dpr;
@@ -968,6 +1122,9 @@
             drawWires();
             
             ctx.restore();
+
+            // Render minimap
+            drawMinimap();
         }
 
         function createComponent(type, worldX, worldY) {
@@ -1544,6 +1701,8 @@
         });
 
         canvas.addEventListener('mousemove', (e) => {
+            if (isDraggingMinimap) return; // Ignore main canvas drags if acting on minimap
+            
             const rect = canvas.getBoundingClientRect();
             const screenX = e.clientX - rect.left;
             const screenY = e.clientY - rect.top;
@@ -1841,6 +2000,47 @@
             draw();
         }, { passive: false });
 
+        // --- Minimap Interaction Logic ---
+        function updateCameraFromMinimap(e) {
+            const rect = minimapCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const targetWorldX = (mouseX - minimapConfig.offsetX) / minimapConfig.mapScale + minimapConfig.mapMinX;
+            const targetWorldY = (mouseY - minimapConfig.offsetY) / minimapConfig.mapScale + minimapConfig.mapMinY;
+            
+            camera.x = canvas.width / dpr / 2 - targetWorldX * camera.zoom;
+            camera.y = canvas.height / dpr / 2 - targetWorldY * camera.zoom;
+            draw();
+        }
+
+        minimapCanvas.addEventListener('mousedown', (e) => {
+            isDraggingMinimap = true;
+            updateCameraFromMinimap(e);
+            e.stopPropagation();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDraggingMinimap) {
+                updateCameraFromMinimap(e);
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingMinimap = false;
+        });
+
+        minimapCanvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const canvasEvent = new WheelEvent('wheel', {
+                deltaY: e.deltaY,
+                clientX: e.clientX,
+                clientY: e.clientY
+            });
+            canvas.dispatchEvent(canvasEvent);
+        }, { passive: false });
+
+        // --- Popup & Navigation Logic ---
         function updatePopupSelection() {
             const items = popup.querySelectorAll('.popup-item');
             items.forEach((item, i) => {

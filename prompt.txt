@@ -38,6 +38,7 @@ Here is Current Features We have you don't need to do anything:
    29.5 Copy & Paste Support: Any custom waypoints are now preserved when duplicating components using Cmd/Ctrl + C & V.
 30. import / export. i can import / export the design so can easily working on next time.
 31. the AND gate 2 input pin must be center on grid so when connected to other input it correctly straight line
+32. add a minimap without modifying the existing functionality is to overlay a secondary <canvas> element specifically for the minimap. We will continuously render a scaled-down version of your components and wires, along with a viewport rectangle that indicates your current visible area.
 
 ## Improvement: 
 
