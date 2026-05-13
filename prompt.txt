@@ -36,6 +36,7 @@ Here is Current Features We have you don't need to do anything:
    29.3 Delete Waypoints: Double-clicking a waypoint will remove it.
    29.4 Reset to Auto: Double-clicking on a wire segment will completely clear its custom routing and revert it back to the automatic pathfinding.
    29.5 Copy & Paste Support: Any custom waypoints are now preserved when duplicating components using Cmd/Ctrl + C & V.
+30. import / export. i can import / export the design so can easily working on next time.
 
 ## Improvement: 
 
