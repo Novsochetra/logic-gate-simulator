@@ -6,6 +6,7 @@ Here is Current Features We have you don't need to do anything:
 4 the canvas should has grid display for better virtuilize
 5 float  nav of component at the bottom center which contain (input, output, gate)
    5.1 each nav menu has it own short cut key (key 1 for input, key 2 for output, key 3 for gate)
+   5.2 output component should be square and make sure it the same size as gird, so we can easier compose bunch of output to make as display led
 6 on each pin of component we can drag it and connect to other pin of other component
 7 when i drag pin and release to empty canvas show the popup display the component and allow me to select item from list of component using arrrow up / arrow down and enter key to select from popup component
 8 ui of each gate make it like toggle on ios button but with square instead of circle and rounded radius.

@@ -345,6 +345,8 @@
                     this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
                     this.inputs =[];
                 } else if (type === 'output') {
+                    this.width = GRID_SIZE;
+                    this.height = GRID_SIZE;
                     this.inputs = [{ x: 0, y: this.height / 2, connections: [] }];
                     this.outputs =[];
                     this.state = false;
@@ -440,37 +442,19 @@
                     ctx.fill();
                     
                 } else if (this.type === 'output') {
-                    const centerX = this.x + this.width / 2;
-                    const centerY = this.y + this.height / 2;
-                    const size = 18;
-                    
                     ctx.fillStyle = this.state ? '#34C759' : '#2C2C2E';
                     ctx.strokeStyle = this.state ? '#34C759' : '#48484A';
                     ctx.lineWidth = 3;
                     
                     ctx.beginPath();
-                    for (let i = 0; i < 6; i++) {
-                        const angle = (Math.PI / 3) * i;
-                        const x = centerX + size * Math.cos(angle);
-                        const y = centerY + size * Math.sin(angle);
-                        if (i === 0) ctx.moveTo(x, y);
-                        else ctx.lineTo(x, y);
-                    }
-                    ctx.closePath();
+                    ctx.roundRect(this.x + 1.5, this.y + 1.5, this.width - 3, this.height - 3, 4);
                     ctx.fill();
                     ctx.stroke();
                     
                     if (this.state) {
                         ctx.fillStyle = 'rgba(52, 199, 89, 0.4)';
                         ctx.beginPath();
-                        for (let i = 0; i < 6; i++) {
-                            const angle = (Math.PI / 3) * i;
-                            const x = centerX + (size - 4) * Math.cos(angle);
-                            const y = centerY + (size - 4) * Math.sin(angle);
-                            if (i === 0) ctx.moveTo(x, y);
-                            else ctx.lineTo(x, y);
-                        }
-                        ctx.closePath();
+                        ctx.roundRect(this.x + 6, this.y + 6, this.width - 12, this.height - 12, 2);
                         ctx.fill();
                     }
                     
@@ -952,8 +936,15 @@
             const rect = canvas.getBoundingClientRect();
             const world = screenToWorld(rect.width / 2, rect.height / 2);
             
-            const w = type === 'label_box' ? 250 : COMPONENT_WIDTH;
-            const h = type === 'label_box' ? 180 : COMPONENT_HEIGHT;
+            let w = COMPONENT_WIDTH;
+            let h = COMPONENT_HEIGHT;
+            if (type === 'label_box') {
+                w = 250;
+                h = 180;
+            } else if (type === 'output') {
+                w = GRID_SIZE;
+                h = GRID_SIZE;
+            }
             
             let baseX = Math.round((world.x - w / 2) / GRID_SIZE) * GRID_SIZE;
             let baseY = Math.round((world.y - h / 2) / GRID_SIZE) * GRID_SIZE;
