@@ -358,7 +358,7 @@
                     ];
                     this.outputs = [{ x: this.width, y: this.height / 2, connections: [] }];
                 } else if (type === 'not_gate') {
-                    this.state = true;
+                    this.state = false; // Start dark, simulator will automatically power it on play
                     this.inputs = [
                         { x: 0, y: this.height / 2, connections: [] }
                     ];
@@ -366,6 +366,13 @@
                 }
                 
                 this.nextState = this.state;
+            }
+
+            resetLogicState() {
+                if (this.type !== 'label_box') {
+                    this.state = false;
+                    this.nextState = false;
+                }
             }
 
             draw() {
@@ -992,16 +999,26 @@
 
         toggleSimBtn.addEventListener('click', () => {
             isSimulating = !isSimulating;
+            
+            // Regardless of Play or Stop, force all components into a blank fresh slate state 
+            components.forEach(comp => {
+                if (comp.resetLogicState) {
+                    comp.resetLogicState();
+                }
+            });
+
             if (isSimulating) {
                 simInterval = setInterval(simulationTick, 25);
                 toggleSimBtn.innerHTML = '⏸ Stop Simulation';
                 toggleSimBtn.classList.remove('stopped');
+                simulationTick(); // Immediately start evaluating the fresh logic state
             } else {
                 clearInterval(simInterval);
                 simInterval = null;
                 toggleSimBtn.innerHTML = '▶ Play Simulation';
                 toggleSimBtn.classList.add('stopped');
             }
+            draw();
             toggleSimBtn.blur();
         });
 
