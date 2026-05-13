@@ -30,6 +30,12 @@ Here is Current Features We have you don't need to do anything:
 26 moving component on canvas snap to each grid make sure all component is align with the grid. becareful on input, output and logic gate. the label box is easier that other.
 27 Mak sure clock oscillator is working
 28 Adding Mode To Play / Pause Simulation. The default state is idle. ensure that when ever we play the state start from fresh mode and when we stop it should clear all state
+29 Manual Wire Routing
+   29.1 Drag to Route: Clicking and dragging on an existing wire will automatically create a waypoint that you can drag to reshape the wire.
+   29.2 Move Waypoints: While a wire is selected, all its manual waypoints will be visible as small dots. You can click and drag them anytime.
+   29.3 Delete Waypoints: Double-clicking a waypoint will remove it.
+   29.4 Reset to Auto: Double-clicking on a wire segment will completely clear its custom routing and revert it back to the automatic pathfinding.
+   29.5 Copy & Paste Support: Any custom waypoints are now preserved when duplicating components using Cmd/Ctrl + C & V.
 
 ## Improvement: 
 
