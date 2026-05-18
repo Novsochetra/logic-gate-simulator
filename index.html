@@ -226,6 +226,100 @@
             min-width: 100px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         }
+
+        /* Help Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 4000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .help-content {
+            background: rgba(30, 30, 30, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            width: 420px;
+            max-width: 90vw;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+            color: white;
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.show .help-content {
+            transform: translateY(0);
+        }
+
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+        }
+
+        .help-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        #closeHelpBtn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.2s;
+            outline: none;
+        }
+
+        #closeHelpBtn:hover {
+            color: white;
+        }
+
+        .help-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .help-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .help-key {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #FFD60A;
+        }
+
+        .help-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
     </style>
 </head>
 <body>
@@ -236,6 +330,7 @@
         <button class="sim-control stopped" id="toggleSimBtn">▶ Play Simulation</button>
         <button class="action-btn" id="exportBtn">📤 Export</button>
         <button class="action-btn" id="importBtn">📥 Import</button>
+        <button class="action-btn" id="helpBtn">❓ Help (H)</button>
         <input type="file" id="importInput" accept=".json" style="display: none;" />
     </div>
     
@@ -279,6 +374,32 @@
         <div class="popup-item" data-type="label_box">Label Box</div>
     </div>
 
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="help-content">
+            <div class="help-header">
+                <h2>Keyboard Shortcuts</h2>
+                <button id="closeHelpBtn">&times;</button>
+            </div>
+            <div class="help-grid">
+                <div class="help-row"><span class="help-key">H</span><span class="help-desc">Show / Hide Help Menu</span></div>
+                <div class="help-row"><span class="help-key">1 - 5</span><span class="help-desc">Add Component</span></div>
+                <div class="help-row"><span class="help-key">V</span><span class="help-desc">Pan Mode</span></div>
+                <div class="help-row"><span class="help-key">S</span><span class="help-desc">Select Mode</span></div>
+                <div class="help-row"><span class="help-key">Cmd/Ctrl + Z</span><span class="help-desc">Undo</span></div>
+                <div class="help-row"><span class="help-key">Cmd/Ctrl + Y / Shift+Z</span><span class="help-desc">Redo</span></div>
+                <div class="help-row"><span class="help-key">Cmd/Ctrl + C</span><span class="help-desc">Copy Selected</span></div>
+                <div class="help-row"><span class="help-key">Cmd/Ctrl + V</span><span class="help-desc">Paste</span></div>
+                <div class="help-row"><span class="help-key">Cmd/Ctrl + A</span><span class="help-desc">Select All</span></div>
+                <div class="help-row"><span class="help-key">Delete / Backspace</span><span class="help-desc">Delete Selected Item</span></div>
+                <div class="help-row"><span class="help-key">Escape</span><span class="help-desc">Deselect / Cancel</span></div>
+                <div class="help-row"><span class="help-key">Double Click Wire</span><span class="help-desc">Reset Auto-Route</span></div>
+                <div class="help-row"><span class="help-key">Double Click Waypoint</span><span class="help-desc">Remove Custom Waypoint</span></div>
+                <div class="help-row"><span class="help-key">Double Click Label Box</span><span class="help-desc">Edit Label Text</span></div>
+            </div>
+        </div>
+    </div>
+
     <div class="zoom-indicator" id="zoomIndicator">100%</div>
     <input type="text" id="labelEditor" class="label-editor" autocomplete="off" spellcheck="false" />
 
@@ -294,6 +415,9 @@
         const exportBtn = document.getElementById('exportBtn');
         const importBtn = document.getElementById('importBtn');
         const importInput = document.getElementById('importInput');
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const closeHelpBtn = document.getElementById('closeHelpBtn');
 
         // Constants
         const GRID_SIZE = 30;
@@ -1356,6 +1480,23 @@
             reader.readAsText(file);
         });
 
+        function toggleHelpMenu() {
+            helpModal.classList.toggle('show');
+        }
+
+        helpBtn.addEventListener('click', () => {
+            toggleHelpMenu();
+            helpBtn.blur();
+        });
+
+        closeHelpBtn.addEventListener('click', toggleHelpMenu);
+
+        helpModal.addEventListener('mousedown', (e) => {
+            if (e.target === helpModal) {
+                toggleHelpMenu();
+            }
+        });
+
         function openLabelEditor(comp) {
             editingComponent = comp;
             labelEditor.value = comp.label;
@@ -1392,6 +1533,14 @@
 
         document.addEventListener('keydown', (e) => {
             if (document.activeElement === labelEditor) return; 
+
+            if (e.key.toLowerCase() === 'h' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                e.preventDefault();
+                toggleHelpMenu();
+                return;
+            }
+
+            if (helpModal.classList.contains('show') && e.key !== 'Escape') return;
 
             // Undo / Redo Shortcuts
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
@@ -1575,6 +1724,10 @@
             else if (e.key === '4') autoSpawnComponent('not_gate');
             else if (e.key === '5') autoSpawnComponent('label_box');
             else if (e.key === 'Escape') {
+                if (helpModal.classList.contains('show')) {
+                    toggleHelpMenu();
+                    return;
+                }
                 selectedPin = null;
                 selectedWire = null;
                 selectedComponents =[];
@@ -1629,7 +1782,7 @@
             if (document.activeElement === labelEditor && e.target !== labelEditor) {
                 labelEditor.blur();
             }
-            if (popupVisible) return;
+            if (popupVisible || helpModal.classList.contains('show')) return;
             
             // Capture State to track drag/interaction changes later on mouseup
             historyTempState = serializeState();
@@ -1736,7 +1889,7 @@
         });
 
         canvas.addEventListener('mousemove', (e) => {
-            if (isDraggingMinimap) return; 
+            if (isDraggingMinimap || helpModal.classList.contains('show')) return; 
             
             const rect = canvas.getBoundingClientRect();
             const screenX = e.clientX - rect.left;
@@ -1994,6 +2147,7 @@
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             if (document.activeElement === labelEditor) labelEditor.blur();
+            if (helpModal.classList.contains('show')) return;
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
@@ -2025,6 +2179,7 @@
         }
 
         minimapCanvas.addEventListener('mousedown', (e) => {
+            if (helpModal.classList.contains('show')) return;
             isDraggingMinimap = true;
             updateCameraFromMinimap(e);
             e.stopPropagation();

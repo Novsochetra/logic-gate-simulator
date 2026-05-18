@@ -41,6 +41,7 @@ Here is Current Features We have you don't need to do anything:
 32. add a minimap without modifying the existing functionality is to overlay a secondary <canvas> element specifically for the minimap. We will continuously render a scaled-down version of your components and wires, along with a viewport rectangle that indicates your current visible area.
 33. Undo (Cmd/Ctrl + Z) & Redo (Cmd/Ctrl + Y or Shift+Cmd/Ctrl + Z): Works seamlessly for placing, moving, wiring, and deleting components.
 34. Auto-Save: Saves quietly to your browser's LocalStorage every time a change is made. If you refresh the page, your circuit loads back automatically.
+35. adding the help button with shortcut key. when user click on help or its shortcut key show all the available shortcut in our app.
 
 ## Improvement: 
 
