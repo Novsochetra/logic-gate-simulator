@@ -1,17 +1,28 @@
-Here is the updated code implementing the Unpack / Explode IC (Shift + G) and
-Copy IC Internals (Cmd/Ctrl + Shift + C) features.
+Here is the complete updated HTML file with the requested mobile responsiveness
+and touch support.
 
-I added the UI button, updated the help menu, and carefully handled the
-bounding-box coordinate offsets so that when you unpack an IC, its internal
-circuitry spawns perfectly aligned with where the IC box was sitting.
+I have implemented:
 
-Complete Updated HTML File
+1.  Media Queries: Scaled down UI elements, wrapped top-left controls, enabled
+    horizontal scrolling on the bottom navigation, and moved/scaled the minimap
+    and zoom indicator for smaller screens.
+2.  Touch Screen Support: Mapped multi-touch events so you can natively interact
+    with the canvas (drag, drop, connect) and pan the minimap just like you
+    would with a mouse. Added double-tap support to mimic double-clicking to
+    reset wires or edit text.
+3.  Pinch-to-Zoom: Implemented native two-finger pinch-to-zoom for the main
+    canvas, smoothly adjusting the camera at the center point of the pinch.
+4.  Mobile Delete Action: Added a dedicated UI "Delete" button (top left), as
+    mobile devices lack a dedicated physical delete key needed to remove wires
+    or parts.
+5.  Dynamic Minimap Resizing Fix: Refactored the minimap logic to properly map
+    coordinate tracking whenever CSS shrinks the minimap size.
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Logic Gate Simulator</title>
     <style>
         * {
@@ -26,6 +37,8 @@ Complete Updated HTML File
             background: #1a1a1a;
             width: 100vw;
             height: 100vh;
+            /* Prevent bouncing on mobile */
+            overscroll-behavior-y: none;
         }
 
         #canvas {
@@ -36,6 +49,7 @@ Complete Updated HTML File
             left: 0;
             width: 100%;
             height: 100%;
+            touch-action: none; /* Let JS handle touch entirely */
         }
 
         #canvas.grabbing {
@@ -56,6 +70,7 @@ Complete Updated HTML File
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             z-index: 1000;
             cursor: crosshair;
+            touch-action: none;
         }
 
         .nav-bar {
@@ -341,6 +356,61 @@ Complete Updated HTML File
             color: rgba(255, 255, 255, 0.8);
             text-align: right;
         }
+
+        /* Mobile Responsive Layout */
+        @media (max-width: 768px) {
+            .nav-bar {
+                width: 95vw;
+                padding: 10px;
+                gap: 8px;
+                bottom: 10px;
+                overflow-x: auto;
+                justify-content: flex-start;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .nav-item {
+                padding: 8px 16px;
+                font-size: 13px;
+                flex-shrink: 0; /* Stop menu squishing */
+            }
+            
+            .nav-item .shortcut {
+                display: none; /* Hide shortcut text since mobile lacks keyboard */
+            }
+            
+            .top-left-controls {
+                top: 10px;
+                left: 10px;
+                gap: 6px;
+                max-width: calc(100vw - 20px);
+            }
+            
+            .sim-control, .action-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            #minimap {
+                width: 120px !important;
+                height: 90px !important;
+                bottom: 70px; /* Kept above nav menu */
+                right: 10px;
+            }
+            
+            .zoom-indicator {
+                top: auto;
+                bottom: 70px; /* Displayed above nav menu */
+                left: 10px;
+                right: auto;
+            }
+
+            .help-content {
+                width: 95vw;
+                padding: 16px;
+                margin: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -349,11 +419,12 @@ Complete Updated HTML File
 
     <div class="top-left-controls">
         <button class="sim-control stopped" id="toggleSimBtn">▶ Play Simulation</button>
-        <button class="action-btn" id="createIcBtn">📦 Create IC (G)</button>
-        <button class="action-btn" id="unpackIcBtn">💥 Unpack IC (Shift+G)</button>
+        <button class="action-btn" id="createIcBtn">📦 Create IC</button>
+        <button class="action-btn" id="unpackIcBtn">💥 Unpack IC</button>
+        <button class="action-btn" id="deleteBtn">🗑 Delete</button>
         <button class="action-btn" id="exportBtn">📤 Export</button>
         <button class="action-btn" id="importBtn">📥 Import</button>
-        <button class="action-btn" id="helpBtn">❓ Help (H)</button>
+        <button class="action-btn" id="helpBtn">❓ Help</button>
         <input type="file" id="importInput" accept=".json" style="display: none;" />
     </div>
     
@@ -419,8 +490,7 @@ Complete Updated HTML File
                 <div class="help-row"><span class="help-key">Cmd/Ctrl + A</span><span class="help-desc">Select All</span></div>
                 <div class="help-row"><span class="help-key">Delete / Backspace</span><span class="help-desc">Delete Selected</span></div>
                 <div class="help-row"><span class="help-key">Escape</span><span class="help-desc">Deselect / Cancel</span></div>
-                <div class="help-row"><span class="help-key">Double Click Wire</span><span class="help-desc">Reset Auto-Route</span></div>
-                <div class="help-row"><span class="help-key">Double Click Label Box</span><span class="help-desc">Edit Label Text</span></div>
+                <div class="help-row"><span class="help-key">Double Click / Tap</span><span class="help-desc">Reset Wire / Edit Label</span></div>
             </div>
         </div>
     </div>
@@ -445,6 +515,7 @@ Complete Updated HTML File
         const closeHelpBtn = document.getElementById('closeHelpBtn');
         const createIcBtn = document.getElementById('createIcBtn');
         const unpackIcBtn = document.getElementById('unpackIcBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
 
         // Constants
         const GRID_SIZE = 30;
@@ -1776,6 +1847,43 @@ Complete Updated HTML File
             unpackIcBtn.blur();
         });
 
+        // Handle generic executeDelete so mobile buttons can share exactly the same logic
+        function executeDelete() {
+            if (selectedPin || selectedWire || selectedComponents.length > 0 || selectedWaypoint) {
+                pushHistory();
+                
+                if (selectedWaypoint) {
+                    const wpWire = selectedWaypoint.wire;
+                    wpWire.waypoints.splice(selectedWaypoint.index, 1);
+                    if (wpWire.waypoints.length === 0) delete wpWire.waypoints;
+                    selectedWaypoint = null;
+                } else if (selectedPin) {
+                    removeWiresForPin(selectedPin);
+                    selectedPin = null;
+                } else if (selectedWire) {
+                    wires = wires.filter(wire => wire !== selectedWire);
+                    selectedWire = null;
+                } else if (selectedComponents.length > 0) {
+                    selectedComponents.forEach(comp => {
+                        wires = wires.filter(wire => wire.from.component !== comp && wire.to.component !== comp);
+                    });
+                    components = components.filter(c => !selectedComponents.includes(c));
+                    selectedComponents = [];
+                }
+                
+                if (isSimulating) simulationTick();
+                saveToLocalStorage();
+                draw();
+            }
+        }
+
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                executeDelete();
+                deleteBtn.blur();
+            });
+        }
+
         function toggleHelpMenu() {
             helpModal.classList.toggle('show');
         }
@@ -1961,30 +2069,7 @@ Complete Updated HTML File
 
             if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedPin || selectedWire || selectedComponents.length > 0 || selectedWaypoint)) {
                 e.preventDefault();
-                pushHistory();
-                
-                if (selectedWaypoint) {
-                    const wpWire = selectedWaypoint.wire;
-                    wpWire.waypoints.splice(selectedWaypoint.index, 1);
-                    if (wpWire.waypoints.length === 0) delete wpWire.waypoints;
-                    selectedWaypoint = null;
-                } else if (selectedPin) {
-                    removeWiresForPin(selectedPin);
-                    selectedPin = null;
-                } else if (selectedWire) {
-                    wires = wires.filter(wire => wire !== selectedWire);
-                    selectedWire = null;
-                } else if (selectedComponents.length > 0) {
-                    selectedComponents.forEach(comp => {
-                        wires = wires.filter(wire => wire.from.component !== comp && wire.to.component !== comp);
-                    });
-                    components = components.filter(c => !selectedComponents.includes(c));
-                    selectedComponents =[];
-                }
-                
-                if (isSimulating) simulationTick();
-                saveToLocalStorage();
-                draw();
+                executeDelete();
                 return;
             }
 
@@ -2450,8 +2535,11 @@ Complete Updated HTML File
 
         function updateCameraFromMinimap(e) {
             const rect = minimapCanvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
+            // Automatically correct mapping coordinates if minimap gets shrunken via responsive CSS
+            const scaleX = 200 / rect.width;
+            const scaleY = 150 / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
             
             const targetWorldX = (mouseX - minimapConfig.offsetX) / minimapConfig.mapScale + minimapConfig.mapMinX;
             const targetWorldY = (mouseY - minimapConfig.offsetY) / minimapConfig.mapScale + minimapConfig.mapMinY;
@@ -2556,6 +2644,114 @@ Complete Updated HTML File
                 popupSourcePin = null;
             }
         });
+
+        // ------------------------------------------------------------
+        // --- Touch Event Mapping for Mobile & Tablet Responsiveness ---
+        // ------------------------------------------------------------
+        function setupTouchEvents(element) {
+            let initialPinchDistance = null;
+            let lastTapTime = 0;
+
+            element.addEventListener('touchstart', function(e) {
+                if (e.target !== element) return; 
+
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    initialPinchDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                } else if (e.touches.length === 1) {
+                    e.preventDefault(); // Prevent native touch scrolling
+                    const touch = e.touches[0];
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTapTime;
+                    
+                    if (tapLength < 300 && tapLength > 0) {
+                        const mouseEvent = new MouseEvent('dblclick', {
+                            clientX: touch.clientX,
+                            clientY: touch.clientY,
+                            bubbles: true
+                        });
+                        element.dispatchEvent(mouseEvent);
+                        lastTapTime = 0;
+                    } else {
+                        lastTapTime = currentTime;
+                        const mouseEvent = new MouseEvent('mousedown', {
+                            clientX: touch.clientX,
+                            clientY: touch.clientY,
+                            bubbles: true
+                        });
+                        element.dispatchEvent(mouseEvent);
+                    }
+                }
+            }, {passive: false});
+
+            element.addEventListener('touchmove', function(e) {
+                if (e.target !== element) return;
+
+                if (e.touches.length === 2 && element === canvas) {
+                    e.preventDefault();
+                    const currentDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    
+                    if (initialPinchDistance) {
+                        const rect = canvas.getBoundingClientRect();
+                        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                        
+                        const worldBefore = screenToWorld(centerX, centerY);
+                        const zoomFactor = currentDistance / initialPinchDistance;
+                        
+                        camera.zoom *= zoomFactor;
+                        camera.zoom = Math.max(0.1, Math.min(5, camera.zoom));
+                        
+                        const worldAfter = screenToWorld(centerX, centerY);
+                        camera.x += (worldAfter.x - worldBefore.x) * camera.zoom;
+                        camera.y += (worldAfter.y - worldBefore.y) * camera.zoom;
+                        
+                        zoomIndicator.textContent = Math.round(camera.zoom * 100) + '%';
+                        draw();
+                        
+                        initialPinchDistance = currentDistance;
+                    }
+                } else if (e.touches.length === 1) {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousemove', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                        bubbles: true
+                    });
+                    element.dispatchEvent(mouseEvent);
+                }
+            }, {passive: false});
+
+            element.addEventListener('touchend', function(e) {
+                if (e.target !== element) return;
+                e.preventDefault();
+                
+                if (initialPinchDistance !== null && e.touches.length < 2) {
+                    initialPinchDistance = null;
+                }
+                
+                if (e.changedTouches.length === 1) {
+                    const touch = e.changedTouches[0];
+                    const mouseEvent = new MouseEvent('mouseup', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                        bubbles: true
+                    });
+                    element.dispatchEvent(mouseEvent);
+                }
+            }, {passive: false});
+        }
+
+        setupTouchEvents(canvas);
+        setupTouchEvents(minimapCanvas);
+
     </script>
 </body>
 </html>

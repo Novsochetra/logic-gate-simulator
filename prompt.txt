@@ -46,6 +46,7 @@ Here is Current Features We have you don't need to do anything:
 37. Create Custom IC
 38. Unpack IC
 39. Copy Internals IC
+40. make it responsive on mobile
 
 ## Improvement: 
 
