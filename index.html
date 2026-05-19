@@ -1,3 +1,12 @@
+Here is the updated code implementing the Unpack / Explode IC (Shift + G) and
+Copy IC Internals (Cmd/Ctrl + Shift + C) features.
+
+I added the UI button, updated the help menu, and carefully handled the
+bounding-box coordinate offsets so that when you unpack an IC, its internal
+circuitry spawns perfectly aligned with where the IC box was sitting.
+
+Complete Updated HTML File
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -173,6 +182,8 @@
             display: flex;
             gap: 12px;
             z-index: 1000;
+            flex-wrap: wrap;
+            max-width: 80vw;
         }
 
         .sim-control, .action-btn {
@@ -255,8 +266,10 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
             padding: 24px;
-            width: 420px;
+            width: 520px;
             max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
             box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
             color: white;
             transform: translateY(20px);
@@ -305,6 +318,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 8px;
+        }
+
+        .help-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
         }
 
         .help-key {
@@ -319,6 +339,7 @@
         .help-desc {
             font-size: 14px;
             color: rgba(255, 255, 255, 0.8);
+            text-align: right;
         }
     </style>
 </head>
@@ -329,6 +350,7 @@
     <div class="top-left-controls">
         <button class="sim-control stopped" id="toggleSimBtn">▶ Play Simulation</button>
         <button class="action-btn" id="createIcBtn">📦 Create IC (G)</button>
+        <button class="action-btn" id="unpackIcBtn">💥 Unpack IC (Shift+G)</button>
         <button class="action-btn" id="exportBtn">📤 Export</button>
         <button class="action-btn" id="importBtn">📥 Import</button>
         <button class="action-btn" id="helpBtn">❓ Help (H)</button>
@@ -388,12 +410,14 @@
                 <div class="help-row"><span class="help-key">V</span><span class="help-desc">Pan Mode</span></div>
                 <div class="help-row"><span class="help-key">S</span><span class="help-desc">Select Mode</span></div>
                 <div class="help-row"><span class="help-key">G</span><span class="help-desc">Create Custom IC from Selection</span></div>
+                <div class="help-row"><span class="help-key">Shift + G</span><span class="help-desc">Unpack / Explode Selected IC</span></div>
                 <div class="help-row"><span class="help-key">Cmd/Ctrl + Z</span><span class="help-desc">Undo</span></div>
                 <div class="help-row"><span class="help-key">Cmd/Ctrl + Y / Shift+Z</span><span class="help-desc">Redo</span></div>
                 <div class="help-row"><span class="help-key">Cmd/Ctrl + C</span><span class="help-desc">Copy Selected</span></div>
+                <div class="help-row"><span class="help-key">Cmd/Ctrl + Shift + C</span><span class="help-desc">Copy IC Internals</span></div>
                 <div class="help-row"><span class="help-key">Cmd/Ctrl + V</span><span class="help-desc">Paste</span></div>
                 <div class="help-row"><span class="help-key">Cmd/Ctrl + A</span><span class="help-desc">Select All</span></div>
-                <div class="help-row"><span class="help-key">Delete / Backspace</span><span class="help-desc">Delete Selected Item / Waypoint</span></div>
+                <div class="help-row"><span class="help-key">Delete / Backspace</span><span class="help-desc">Delete Selected</span></div>
                 <div class="help-row"><span class="help-key">Escape</span><span class="help-desc">Deselect / Cancel</span></div>
                 <div class="help-row"><span class="help-key">Double Click Wire</span><span class="help-desc">Reset Auto-Route</span></div>
                 <div class="help-row"><span class="help-key">Double Click Label Box</span><span class="help-desc">Edit Label Text</span></div>
@@ -420,6 +444,7 @@
         const helpModal = document.getElementById('helpModal');
         const closeHelpBtn = document.getElementById('closeHelpBtn');
         const createIcBtn = document.getElementById('createIcBtn');
+        const unpackIcBtn = document.getElementById('unpackIcBtn');
 
         // Constants
         const GRID_SIZE = 30;
@@ -1691,6 +1716,66 @@
             createIcBtn.blur();
         });
 
+        function unpackSelectedICs() {
+            const icsToUnpack = selectedComponents.filter(c => c.type === 'custom_ic');
+            if (icsToUnpack.length === 0) return;
+
+            pushHistory();
+
+            let newSelected = [];
+
+            icsToUnpack.forEach(ic => {
+                // Find original bounding box of the internals
+                let origMinX = Infinity, origMinY = Infinity;
+                ic.internalComponents.forEach(c => {
+                    origMinX = Math.min(origMinX, c.x);
+                    origMinY = Math.min(origMinY, c.y);
+                });
+                
+                // Fallback in case there are no internal components (edge case)
+                if (origMinX === Infinity) origMinX = ic.x;
+                if (origMinY === Infinity) origMinY = ic.y;
+
+                // Calculate the offset between current IC position and original creation position
+                const offsetX = ic.x - origMinX;
+                const offsetY = ic.y - origMinY;
+
+                // Shift and re-add internal components
+                ic.internalComponents.forEach(c => {
+                    c.x += offsetX;
+                    c.y += offsetY;
+                    components.push(c);
+                    newSelected.push(c);
+                });
+
+                // Shift and re-add internal wires
+                ic.internalWires.forEach(w => {
+                    if (w.waypoints) {
+                        w.waypoints.forEach(wp => {
+                            wp.x += offsetX;
+                            wp.y += offsetY;
+                        });
+                    }
+                    wires.push(w);
+                });
+
+                // Remove external wires that were attached to the IC itself
+                wires = wires.filter(w => w.from.component !== ic && w.to.component !== ic);
+
+                // Remove the IC
+                components = components.filter(c => c !== ic);
+            });
+
+            selectedComponents = newSelected;
+            saveToLocalStorage();
+            draw();
+        }
+
+        unpackIcBtn.addEventListener('click', () => {
+            unpackSelectedICs();
+            unpackIcBtn.blur();
+        });
+
         function toggleHelpMenu() {
             helpModal.classList.toggle('show');
         }
@@ -1762,9 +1847,13 @@
                 return;
             }
 
-            if (e.key.toLowerCase() === 'g' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+            if (e.key.toLowerCase() === 'g' && !e.metaKey && !e.ctrlKey) {
                 e.preventDefault();
-                createIcBtn.click();
+                if (e.shiftKey) {
+                    unpackSelectedICs();
+                } else {
+                    createIcBtn.click();
+                }
                 return;
             }
 
@@ -1799,10 +1888,23 @@
 
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
                 e.preventDefault();
-                if (selectedComponents.length > 0) {
-                    const selectedWires = wires.filter(w => selectedComponents.includes(w.from.component) && selectedComponents.includes(w.to.component));
-                    clipboard = serializeCircuit(selectedComponents, selectedWires);
-                    pasteOffset = GRID_SIZE; 
+                if (e.shiftKey) {
+                    // Copy IC Internals
+                    const selectedIcs = selectedComponents.filter(c => c.type === 'custom_ic');
+                    if (selectedIcs.length === 1) {
+                        const ic = selectedIcs[0];
+                        clipboard = serializeCircuit(ic.internalComponents, ic.internalWires);
+                        pasteOffset = GRID_SIZE;
+                    } else if (selectedIcs.length > 1) {
+                        alert("Please select only one Custom IC to copy its internals.");
+                    }
+                } else {
+                    // Normal Copy
+                    if (selectedComponents.length > 0) {
+                        const selectedWires = wires.filter(w => selectedComponents.includes(w.from.component) && selectedComponents.includes(w.to.component));
+                        clipboard = serializeCircuit(selectedComponents, selectedWires);
+                        pasteOffset = GRID_SIZE; 
+                    }
                 }
                 return;
             }
