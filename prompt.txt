@@ -47,6 +47,8 @@ Here is Current Features We have you don't need to do anything:
 38. Unpack IC
 39. Copy Internals IC
 40. make it responsive on mobile
+41. adding reset button to reset canvas layout size to default
+42. remember user resize canvas
 
 ## Improvement: 
 

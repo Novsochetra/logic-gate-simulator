@@ -172,6 +172,18 @@
         font-size: 12px;
         font-weight: 500;
         z-index: 1000;
+        cursor: pointer;
+        transition: all 0.2s;
+        user-select: none;
+      }
+
+      .zoom-indicator:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+      }
+
+      .zoom-indicator:active {
+        transform: scale(0.95);
       }
 
       .top-left-controls {
@@ -524,6 +536,10 @@
             ><span class="help-desc">Delete Selected</span>
           </div>
           <div class="help-row">
+            <span class="help-key">Cmd/Ctrl + 0</span
+            ><span class="help-desc">Reset View</span>
+          </div>
+          <div class="help-row">
             <span class="help-key">Escape</span
             ><span class="help-desc">Deselect / Cancel</span>
           </div>
@@ -535,7 +551,13 @@
       </div>
     </div>
 
-    <div class="zoom-indicator" id="zoomIndicator">100%</div>
+    <div
+      class="zoom-indicator"
+      id="zoomIndicator"
+      title="Reset View (Cmd/Ctrl + 0)"
+    >
+      100%
+    </div>
     <input
       type="text"
       id="labelEditor"
@@ -1154,6 +1176,19 @@
 
       window.addEventListener("resize", resizeCanvas);
       resizeCanvas();
+
+      function saveCameraState() {
+        localStorage.setItem("logicSimulatorCamera", JSON.stringify(camera));
+      }
+
+      function resetCamera() {
+        camera = { x: 0, y: 0, zoom: 1 };
+        zoomIndicator.textContent = "100%";
+        saveCameraState();
+        draw();
+      }
+
+      zoomIndicator.addEventListener("click", resetCamera);
 
       function screenToWorld(screenX, screenY) {
         return {
@@ -1879,8 +1914,27 @@
 
       // Boot-up AutoLoad
       window.addEventListener("load", () => {
+        // Load Camera Setup First
+        const savedCamera = localStorage.getItem("logicSimulatorCamera");
+        if (savedCamera) {
+          try {
+            const parsedCamera = JSON.parse(savedCamera);
+            if (
+              typeof parsedCamera.x === "number" &&
+              typeof parsedCamera.y === "number" &&
+              typeof parsedCamera.zoom === "number"
+            ) {
+              camera = parsedCamera;
+              zoomIndicator.textContent = Math.round(camera.zoom * 100) + "%";
+            }
+          } catch (e) {
+            console.error("Failed to load camera state", e);
+          }
+        }
+
         const saved = localStorage.getItem("logicSimulatorAutoSave");
         if (saved) loadSerializedState(saved);
+        else draw();
       });
 
       // --- End Core State Management ---
@@ -2424,6 +2478,12 @@
           return;
         }
 
+        if ((e.metaKey || e.ctrlKey) && e.key === "0") {
+          e.preventDefault();
+          resetCamera();
+          return;
+        }
+
         if (
           (e.key === "Delete" || e.key === "Backspace") &&
           (selectedPin ||
@@ -2907,6 +2967,9 @@
         }
 
         isResizingComponent = null;
+        if (isDraggingCanvas) {
+          saveCameraState();
+        }
         isDraggingCanvas = false;
         canvas.style.cursor = "";
 
@@ -2973,6 +3036,7 @@
           camera.y += (worldAfter.y - worldBefore.y) * camera.zoom;
 
           zoomIndicator.textContent = Math.round(camera.zoom * 100) + "%";
+          saveCameraState();
           draw();
         },
         { passive: false },
@@ -3010,6 +3074,9 @@
       });
 
       window.addEventListener("mouseup", () => {
+        if (isDraggingMinimap) {
+          saveCameraState();
+        }
         isDraggingMinimap = false;
       });
 
@@ -3227,6 +3294,7 @@
 
             if (initialPinchDistance !== null && e.touches.length < 2) {
               initialPinchDistance = null;
+              saveCameraState();
             }
 
             if (e.changedTouches.length === 1) {
