@@ -391,10 +391,9 @@
                 <div class="help-row"><span class="help-key">Cmd/Ctrl + C</span><span class="help-desc">Copy Selected</span></div>
                 <div class="help-row"><span class="help-key">Cmd/Ctrl + V</span><span class="help-desc">Paste</span></div>
                 <div class="help-row"><span class="help-key">Cmd/Ctrl + A</span><span class="help-desc">Select All</span></div>
-                <div class="help-row"><span class="help-key">Delete / Backspace</span><span class="help-desc">Delete Selected Item</span></div>
+                <div class="help-row"><span class="help-key">Delete / Backspace</span><span class="help-desc">Delete Selected Item / Waypoint</span></div>
                 <div class="help-row"><span class="help-key">Escape</span><span class="help-desc">Deselect / Cancel</span></div>
                 <div class="help-row"><span class="help-key">Double Click Wire</span><span class="help-desc">Reset Auto-Route</span></div>
-                <div class="help-row"><span class="help-key">Double Click Waypoint</span><span class="help-desc">Remove Custom Waypoint</span></div>
                 <div class="help-row"><span class="help-key">Double Click Label Box</span><span class="help-desc">Edit Label Text</span></div>
             </div>
         </div>
@@ -451,6 +450,7 @@
         let hoveredPin = null;
         let selectedPin = null;
         let selectedWire = null;
+        let selectedWaypoint = null;
         let selectedComponents =[];
         let editingComponent = null;
         let clipboard = null;
@@ -1033,15 +1033,26 @@
                     drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
 
                     if (wire.waypoints) {
-                        wire.waypoints.forEach(wp => {
+                        wire.waypoints.forEach((wp, index) => {
                             const screenWp = worldToScreen(wp.x, wp.y);
-                            ctx.fillStyle = '#2C2C2E';
-                            ctx.strokeStyle = '#34C759';
+                            
+                            const isWpSelected = selectedWaypoint && selectedWaypoint.wire === wire && selectedWaypoint.index === index;
+                            
+                            ctx.fillStyle = isWpSelected ? '#FFD60A' : '#2C2C2E';
+                            ctx.strokeStyle = isWpSelected ? '#FFD60A' : '#34C759';
+                            
+                            if (isWpSelected) {
+                                ctx.shadowColor = '#FFD60A';
+                                ctx.shadowBlur = 10;
+                            }
+                            
                             ctx.lineWidth = 2;
                             ctx.beginPath();
-                            ctx.arc(screenWp.x, screenWp.y, 6 * camera.zoom, 0, Math.PI * 2);
+                            ctx.arc(screenWp.x, screenWp.y, (isWpSelected ? 7 : 6) * camera.zoom, 0, Math.PI * 2);
                             ctx.fill();
                             ctx.stroke();
+                            
+                            ctx.shadowBlur = 0;
                         });
                     }
                 }
@@ -1289,6 +1300,7 @@
                 selectedComponents = [];
                 selectedPin = null;
                 selectedWire = null;
+                selectedWaypoint = null;
                 isDraggingPin = null;
                 hoveredPin = null;
                 clipboard = null;
@@ -1663,6 +1675,7 @@
                 selectedComponents = [...components];
                 selectedPin = null;
                 selectedWire = null;
+                selectedWaypoint = null;
                 if (popupVisible) {
                     popup.classList.remove('show');
                     popupVisible = false;
@@ -1672,11 +1685,16 @@
                 return;
             }
 
-            if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedPin || selectedWire || selectedComponents.length > 0)) {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedPin || selectedWire || selectedComponents.length > 0 || selectedWaypoint)) {
                 e.preventDefault();
                 pushHistory();
                 
-                if (selectedPin) {
+                if (selectedWaypoint) {
+                    const wpWire = selectedWaypoint.wire;
+                    wpWire.waypoints.splice(selectedWaypoint.index, 1);
+                    if (wpWire.waypoints.length === 0) delete wpWire.waypoints;
+                    selectedWaypoint = null;
+                } else if (selectedPin) {
                     removeWiresForPin(selectedPin);
                     selectedPin = null;
                 } else if (selectedWire) {
@@ -1733,6 +1751,7 @@
                 selectedComponents =[];
                 isDraggingPin = null;
                 hoveredPin = null;
+                selectedWaypoint = null;
                 draw();
             }
         });
@@ -1793,13 +1812,16 @@
             const world = screenToWorld(screenX, screenY);
             
             mousePos = { x: screenX, y: screenY };
+            selectedWaypoint = null; // Reset waypoint selection by default on new click
 
             if (selectedWire && selectedWire.waypoints) {
                 for (let i = 0; i < selectedWire.waypoints.length; i++) {
                     const wp = selectedWire.waypoints[i];
                     if (Math.hypot(world.x - wp.x, world.y - wp.y) < 15 / camera.zoom) {
                         isDraggingWaypoint = { wire: selectedWire, index: i };
+                        selectedWaypoint = { wire: selectedWire, index: i };
                         dragStartMousePos = { x: screenX, y: screenY };
+                        draw();
                         return;
                     }
                 }
@@ -1966,6 +1988,7 @@
                     
                     wire.waypoints.splice(potentialWaypoint.segmentIndex, 0, newWp);
                     isDraggingWaypoint = { wire: wire, index: potentialWaypoint.segmentIndex };
+                    selectedWaypoint = { wire: wire, index: potentialWaypoint.segmentIndex };
                     potentialWaypoint = null;
                     draw();
                     return;
@@ -2115,20 +2138,6 @@
                 if (comp.type === 'label_box' && comp.containsPoint(world.x, world.y)) {
                     openLabelEditor(comp);
                     return;
-                }
-            }
-
-            if (selectedWire && selectedWire.waypoints) {
-                for (let i = 0; i < selectedWire.waypoints.length; i++) {
-                    const wp = selectedWire.waypoints[i];
-                    if (Math.hypot(world.x - wp.x, world.y - wp.y) < 15 / camera.zoom) {
-                        pushHistory();
-                        selectedWire.waypoints.splice(i, 1);
-                        if (selectedWire.waypoints.length === 0) delete selectedWire.waypoints;
-                        saveToLocalStorage();
-                        draw();
-                        return;
-                    }
                 }
             }
 
