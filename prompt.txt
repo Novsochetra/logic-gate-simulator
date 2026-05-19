@@ -43,6 +43,7 @@ Here is Current Features We have you don't need to do anything:
 34. Auto-Save: Saves quietly to your browser's LocalStorage every time a change is made. If you refresh the page, your circuit loads back automatically.
 35. adding the help button with shortcut key. when user click on help or its shortcut key show all the available shortcut in our app.
 36. make the wire easier to spot when 1 wire cross each other so we can know which one is on top which one is below
+37. Create Custom IC
 
 ## Improvement: 
 
