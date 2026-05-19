@@ -1014,9 +1014,18 @@
                 const points = getWirePath(wire);
                 const screenPoints = points.map(p => worldToScreen(p.x, p.y));
 
+                // Wire Outline / Crossing Gap Effect
+                ctx.strokeStyle = '#1a1a1a';
+                ctx.lineWidth = 11;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
+
                 if (isWireSelected) {
                     ctx.strokeStyle = '#34C759';
                     ctx.lineWidth = 7;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
                     ctx.shadowColor = '#34C759';
                     ctx.shadowBlur = 20;
                     drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
@@ -1025,6 +1034,8 @@
                 
                 ctx.strokeStyle = isWireSelected ? '#34C759' : (isWireActive ? '#34C759' : '#666');
                 ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
                 drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
                 
                 if (isWireSelected) {
@@ -1057,36 +1068,6 @@
                     }
                 }
             });
-
-            if (isDraggingPin && pinDragDidMove) {
-                const fromWorldX = isDraggingPin.component.x + isDraggingPin.pin.x;
-                const fromWorldY = isDraggingPin.component.y + isDraggingPin.pin.y;
-                const mouseWorld = screenToWorld(mousePos.x, mousePos.y);
-
-                let actualFromWorld, actualToWorld;
-                let isSelfLoopTemp = false;
-
-                if (hoveredPin && hoveredPin.component === isDraggingPin.component) {
-                    isSelfLoopTemp = true;
-                }
-
-                if (isDraggingPin.type === 'input') {
-                    actualFromWorld = mouseWorld;
-                    actualToWorld = { x: fromWorldX, y: fromWorldY };
-                } else {
-                    actualFromWorld = { x: fromWorldX, y: fromWorldY };
-                    actualToWorld = mouseWorld;
-                }
-
-                const points = getOrthogonalPath(actualFromWorld.x, actualFromWorld.y, actualToWorld.x, actualToWorld.y, isSelfLoopTemp);
-                const screenPoints = points.map(p => worldToScreen(p.x, p.y));
-
-                ctx.strokeStyle = '#007AFF';
-                ctx.lineWidth = 3;
-                ctx.setLineDash([5, 5]);
-                drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
-                ctx.setLineDash([]);
-            }
         }
 
         function removeWiresForPin(pinInfo) {
@@ -1169,12 +1150,24 @@
             }
             
             // Draw Wires
-            minimapCtx.lineWidth = 1.5;
             wires.forEach(w => {
                 const path = getWirePath(w);
                 if (path.length > 0) {
+                    minimapCtx.lineCap = 'round';
+                    minimapCtx.lineJoin = 'round';
+                    
+                    minimapCtx.beginPath();
+                    minimapCtx.strokeStyle = '#1a1a1a';
+                    minimapCtx.lineWidth = 4;
+                    minimapCtx.moveTo(mmX(path[0].x), mmY(path[0].y));
+                    for (let i = 1; i < path.length; i++) {
+                        minimapCtx.lineTo(mmX(path[i].x), mmY(path[i].y));
+                    }
+                    minimapCtx.stroke();
+                    
                     minimapCtx.beginPath();
                     minimapCtx.strokeStyle = w.from.component.state ? '#34C759' : '#666';
+                    minimapCtx.lineWidth = 1.5;
                     minimapCtx.moveTo(mmX(path[0].x), mmY(path[0].y));
                     for (let i = 1; i < path.length; i++) {
                         minimapCtx.lineTo(mmX(path[i].x), mmY(path[i].y));
@@ -1232,6 +1225,9 @@
             
             drawGrid();
             
+            // Wires rendered before components so halos don't cover pins
+            drawWires();
+            
             ctx.save();
             ctx.translate(camera.x, camera.y);
             ctx.scale(camera.zoom, camera.zoom);
@@ -1256,7 +1252,47 @@
             }
             
             ctx.restore();
-            drawWires();
+            
+            // Dragging wire rendered on top of components
+            if (isDraggingPin && pinDragDidMove) {
+                const scaledRadius = 8 * camera.zoom;
+                const fromWorldX = isDraggingPin.component.x + isDraggingPin.pin.x;
+                const fromWorldY = isDraggingPin.component.y + isDraggingPin.pin.y;
+                const mouseWorld = screenToWorld(mousePos.x, mousePos.y);
+
+                let actualFromWorld, actualToWorld;
+                let isSelfLoopTemp = false;
+
+                if (hoveredPin && hoveredPin.component === isDraggingPin.component) {
+                    isSelfLoopTemp = true;
+                }
+
+                if (isDraggingPin.type === 'input') {
+                    actualFromWorld = mouseWorld;
+                    actualToWorld = { x: fromWorldX, y: fromWorldY };
+                } else {
+                    actualFromWorld = { x: fromWorldX, y: fromWorldY };
+                    actualToWorld = mouseWorld;
+                }
+
+                const points = getOrthogonalPath(actualFromWorld.x, actualFromWorld.y, actualToWorld.x, actualToWorld.y, isSelfLoopTemp);
+                const screenPoints = points.map(p => worldToScreen(p.x, p.y));
+
+                ctx.strokeStyle = '#1a1a1a';
+                ctx.lineWidth = 11;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
+
+                ctx.strokeStyle = '#007AFF';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.setLineDash([5, 5]);
+                drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
+                ctx.setLineDash([]);
+            }
+
             ctx.restore();
             drawMinimap();
         }
