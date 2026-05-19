@@ -423,6 +423,8 @@
       </button>
       <button class="action-btn" id="createIcBtn">📦 Create IC</button>
       <button class="action-btn" id="unpackIcBtn">💥 Unpack IC</button>
+      <button class="action-btn" id="copyBtn">📄 Copy</button>
+      <button class="action-btn" id="pasteBtn">📋 Paste</button>
       <button class="action-btn" id="deleteBtn">🗑 Delete</button>
       <button class="action-btn" id="exportBtn">📤 Export</button>
       <button class="action-btn" id="importBtn">📥 Import</button>
@@ -583,6 +585,8 @@
       const closeHelpBtn = document.getElementById("closeHelpBtn");
       const createIcBtn = document.getElementById("createIcBtn");
       const unpackIcBtn = document.getElementById("unpackIcBtn");
+      const copyBtn = document.getElementById("copyBtn");
+      const pasteBtn = document.getElementById("pasteBtn");
       const deleteBtn = document.getElementById("deleteBtn");
 
       // Constants
@@ -2223,6 +2227,88 @@
         unpackIcBtn.blur();
       });
 
+      function executeCopy(isInternal = false) {
+        if (isInternal) {
+          // Copy IC Internals
+          const selectedIcs = selectedComponents.filter(
+            (c) => c.type === "custom_ic",
+          );
+          if (selectedIcs.length === 1) {
+            const ic = selectedIcs[0];
+            clipboard = serializeCircuit(
+              ic.internalComponents,
+              ic.internalWires,
+            );
+            pasteOffset = GRID_SIZE;
+          } else if (selectedIcs.length > 1) {
+            alert("Please select only one Custom IC to copy its internals.");
+          }
+        } else {
+          // Normal Copy
+          if (selectedComponents.length > 0) {
+            const selectedWires = wires.filter(
+              (w) =>
+                selectedComponents.includes(w.from.component) &&
+                selectedComponents.includes(w.to.component),
+            );
+            clipboard = serializeCircuit(selectedComponents, selectedWires);
+            pasteOffset = GRID_SIZE;
+          }
+        }
+      }
+
+      function executePaste() {
+        if (clipboard && clipboard.components.length > 0) {
+          pushHistory();
+
+          const { comps, wires: newWires } = parseCircuit(
+            clipboard.components,
+            clipboard.wires,
+            new Map(),
+            true,
+          );
+
+          selectedComponents = [];
+          const snap = GRID_SIZE / 2;
+
+          comps.forEach((c) => {
+            c.x = Math.round((c.x + pasteOffset) / snap) * snap;
+            c.y = Math.round((c.y + pasteOffset) / snap) * snap;
+
+            components.push(c);
+            selectedComponents.push(c);
+          });
+
+          newWires.forEach((w) => {
+            if (w.waypoints) {
+              w.waypoints.forEach((wp) => {
+                wp.x += pasteOffset;
+                wp.y += pasteOffset;
+              });
+            }
+            wires.push(w);
+          });
+
+          pasteOffset += GRID_SIZE;
+          saveToLocalStorage();
+          draw();
+        }
+      }
+
+      if (copyBtn) {
+        copyBtn.addEventListener("click", () => {
+          executeCopy();
+          copyBtn.blur();
+        });
+      }
+
+      if (pasteBtn) {
+        pasteBtn.addEventListener("click", () => {
+          executePaste();
+          pasteBtn.blur();
+        });
+      }
+
       // Handle generic executeDelete so mobile buttons can share exactly the same logic
       function executeDelete() {
         if (
@@ -2393,73 +2479,13 @@
 
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c") {
           e.preventDefault();
-          if (e.shiftKey) {
-            // Copy IC Internals
-            const selectedIcs = selectedComponents.filter(
-              (c) => c.type === "custom_ic",
-            );
-            if (selectedIcs.length === 1) {
-              const ic = selectedIcs[0];
-              clipboard = serializeCircuit(
-                ic.internalComponents,
-                ic.internalWires,
-              );
-              pasteOffset = GRID_SIZE;
-            } else if (selectedIcs.length > 1) {
-              alert("Please select only one Custom IC to copy its internals.");
-            }
-          } else {
-            // Normal Copy
-            if (selectedComponents.length > 0) {
-              const selectedWires = wires.filter(
-                (w) =>
-                  selectedComponents.includes(w.from.component) &&
-                  selectedComponents.includes(w.to.component),
-              );
-              clipboard = serializeCircuit(selectedComponents, selectedWires);
-              pasteOffset = GRID_SIZE;
-            }
-          }
+          executeCopy(e.shiftKey);
           return;
         }
 
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "v") {
           e.preventDefault();
-          if (clipboard && clipboard.components.length > 0) {
-            pushHistory();
-
-            const { comps, wires: newWires } = parseCircuit(
-              clipboard.components,
-              clipboard.wires,
-              new Map(),
-              true,
-            );
-
-            selectedComponents = [];
-            const snap = GRID_SIZE / 2;
-
-            comps.forEach((c) => {
-              c.x = Math.round((c.x + pasteOffset) / snap) * snap;
-              c.y = Math.round((c.y + pasteOffset) / snap) * snap;
-
-              components.push(c);
-              selectedComponents.push(c);
-            });
-
-            newWires.forEach((w) => {
-              if (w.waypoints) {
-                w.waypoints.forEach((wp) => {
-                  wp.x += pasteOffset;
-                  wp.y += pasteOffset;
-                });
-              }
-              wires.push(w);
-            });
-
-            pasteOffset += GRID_SIZE;
-            saveToLocalStorage();
-            draw();
-          }
+          executePaste();
           return;
         }
 

@@ -49,6 +49,7 @@ Here is Current Features We have you don't need to do anything:
 40. make it responsive on mobile
 41. adding reset button to reset canvas layout size to default
 42. remember user resize canvas
+43. Adding copy / paste on mobile device
 
 ## Improvement: 
 
