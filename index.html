@@ -2072,7 +2072,7 @@
         });
 
         if (isSimulating) {
-          simInterval = setInterval(simulationTick, 25);
+          simInterval = setInterval(simulationTick, 1);
           toggleSimBtn.innerHTML = "⏸ Stop Simulation";
           toggleSimBtn.classList.remove("stopped");
           simulationTick();
