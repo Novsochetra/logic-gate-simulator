@@ -500,7 +500,7 @@
           </div>
           <div class="help-row">
             <span class="help-key">V</span
-            ><span class="help-desc">Pan Mode</span>
+            ><span class="shortcut">Pan Mode</span>
           </div>
           <div class="help-row">
             <span class="help-key">S</span
@@ -790,13 +790,13 @@
             const radius = 12;
             const isSelected = selectedComponents.includes(this);
 
-            // Refined Solid Colors for Label Box
+            // UPDATED: Semi-transparent background, opaque border
             if (isSelected) {
-              ctx.fillStyle = "#1e2a3a"; // Solid dark navy
+              ctx.fillStyle = "rgba(30, 42, 58, 0.7)"; // Transparent dark navy
               ctx.strokeStyle = "#007AFF"; // Solid iOS Blue
               ctx.lineWidth = 2.5;
             } else {
-              ctx.fillStyle = "#262626"; // Solid dark gray
+              ctx.fillStyle = "rgba(38, 38, 38, 0.6)"; // Transparent dark gray
               ctx.strokeStyle = "#444444"; // Solid light gray
               ctx.lineWidth = 2;
             }
@@ -813,23 +813,19 @@
             ctx.textBaseline = "top";
             ctx.fillText(this.label, this.x + 16, this.y + 16);
 
-            // REFINED Resize Handle: No transparency, merged background
+            // Solid Resize Handle: Using solid hex to ensure no transparency on the corner
             ctx.save();
             ctx.beginPath();
-            // Create a path for the corner area to clip the handle triangle
             ctx.roundRect(this.x, this.y, this.width, this.height, radius);
             ctx.clip(); 
 
             const handleColor = isSelected ? "#007AFF" : "#444444";
-            ctx.fillStyle = handleColor;
+            ctx.fillStyle = handleColor; // SOLID HEX
             
             const handleSize = 22;
             ctx.beginPath();
-            // Start from the bottom edge
             ctx.moveTo(this.x + this.width - handleSize, this.y + this.height);
-            // Go to the right edge
             ctx.lineTo(this.x + this.width, this.y + this.height - handleSize);
-            // Close at the vertex
             ctx.lineTo(this.x + this.width, this.y + this.height);
             ctx.closePath();
             ctx.fill();
@@ -1692,28 +1688,33 @@
 
         drawGrid();
 
-        // Wires rendered before components so halos don't cover pins
+        ctx.save();
+        ctx.translate(camera.x, camera.y);
+        ctx.scale(camera.zoom, camera.zoom);
+        components
+          .filter((c) => c.type === "label_box")
+          .forEach((comp) => comp.draw());
+        ctx.restore();
+
+        // 3. Wire Layer: Pathing
         drawWires();
 
+        // 4. Logic & Label Layer
         ctx.save();
         ctx.translate(camera.x, camera.y);
         ctx.scale(camera.zoom, camera.zoom);
 
-        // Draw containers first
-        components
-          .filter((c) => c.type === "label_box")
-          .forEach((comp) => comp.draw());
-        
         // Logic components
         components
           .filter((c) => c.type !== "label_box" && c.type !== "label")
           .forEach((comp) => comp.draw());
 
-        // Labels Drawn LAST to ensure overlay
+        // Overlay Labels
         components
           .filter((c) => c.type === "label")
           .forEach((comp) => comp.draw());
 
+        // Selection Box
         if (isSelectingBox) {
           ctx.fillStyle = "rgba(0, 122, 255, 0.15)";
           ctx.strokeStyle = "#007AFF";
@@ -1732,7 +1733,7 @@
 
         ctx.restore();
 
-        // Dragging wire rendered on top of components
+        // 5. Interaction Layer: Active dragging wire
         if (isDraggingPin && pinDragDidMove) {
           const scaledRadius = 8 * camera.zoom;
           const fromWorldX = isDraggingPin.component.x + isDraggingPin.pin.x;
@@ -1778,10 +1779,10 @@
           ctx.setLineDash([]);
         }
 
-        ctx.restore();
+        ctx.restore(); // Restore DPR scale
         drawMinimap();
       }
-
+      
       // --- Core State Management (Undo/Redo & Save/Load) ---
       function serializeCircuit(comps, wireList) {
         return {
@@ -2239,7 +2240,6 @@
         let newSelected = [];
 
         icsToUnpack.forEach((ic) => {
-          // Find original bounding box of the internals
           let origMinX = Infinity,
             origMinY = Infinity;
           ic.internalComponents.forEach((c) => {
@@ -2247,15 +2247,12 @@
             origMinY = Math.min(origMinY, c.y);
           });
 
-          // Fallback in case there are no internal components (edge case)
           if (origMinX === Infinity) origMinX = ic.x;
           if (origMinY === Infinity) origMinY = ic.y;
 
-          // Calculate the offset between current IC position and original creation position
           const offsetX = ic.x - origMinX;
           const offsetY = ic.y - origMinY;
 
-          // Shift and re-add internal components
           ic.internalComponents.forEach((c) => {
             c.x += offsetX;
             c.y += offsetY;
@@ -2263,7 +2260,6 @@
             newSelected.push(c);
           });
 
-          // Shift and re-add internal wires
           ic.internalWires.forEach((w) => {
             if (w.waypoints) {
               w.waypoints.forEach((wp) => {
@@ -2274,12 +2270,10 @@
             wires.push(w);
           });
 
-          // Remove external wires that were attached to the IC itself
           wires = wires.filter(
             (w) => w.from.component !== ic && w.to.component !== ic,
           );
 
-          // Remove the IC
           components = components.filter((c) => c !== ic);
         });
 
@@ -2295,7 +2289,6 @@
 
       function executeCopy(isInternal = false) {
         if (isInternal) {
-          // Copy IC Internals
           const selectedIcs = selectedComponents.filter(
             (c) => c.type === "custom_ic",
           );
@@ -2310,7 +2303,6 @@
             alert("Please select only one Custom IC to copy its internals.");
           }
         } else {
-          // Normal Copy
           if (selectedComponents.length > 0) {
             const selectedWires = wires.filter(
               (w) =>
@@ -2375,7 +2367,6 @@
         });
       }
 
-      // Handle generic executeDelete so mobile buttons can share exactly the same logic
       function executeDelete() {
         if (
           selectedPin ||
@@ -2521,7 +2512,6 @@
 
         if (helpModal.classList.contains("show") && e.key !== "Escape") return;
 
-        // Undo / Redo Shortcuts
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
           e.preventDefault();
           if (e.shiftKey) performRedo();
@@ -2691,7 +2681,6 @@
         }
         if (popupVisible || helpModal.classList.contains("show")) return;
 
-        // Capture State to track drag/interaction changes later on mouseup
         historyTempState = serializeState();
 
         const rect = canvas.getBoundingClientRect();
@@ -2700,7 +2689,7 @@
         const world = screenToWorld(screenX, screenY);
 
         mousePos = { x: screenX, y: screenY };
-        selectedWaypoint = null; // Reset waypoint selection by default on new click
+        selectedWaypoint = null; 
 
         if (selectedWire && selectedWire.waypoints) {
           for (let i = 0; i < selectedWire.waypoints.length; i++) {
@@ -2765,7 +2754,7 @@
           }
         }
 
-        // Check labels first as they overlay
+        // Labels overlay
         const labels = components.filter((c) => c.type === "label");
         for (let comp of [...labels].reverse()) {
           if (comp.containsPoint(world.x, world.y)) {
@@ -3080,7 +3069,6 @@
         isDraggingCanvas = false;
         canvas.style.cursor = "";
 
-        // --- Determine if state changed since MouseDown, save to history/localStorage ---
         if (historyTempState) {
           const newState = serializeState();
           if (historyTempState !== newState) {
@@ -3151,7 +3139,6 @@
 
       function updateCameraFromMinimap(e) {
         const rect = minimapCanvas.getBoundingClientRect();
-        // Automatically correct mapping coordinates if minimap gets shrunken via responsive CSS
         const scaleX = 200 / rect.width;
         const scaleY = 150 / rect.height;
         const mouseX = (e.clientX - rect.left) * scaleX;
@@ -3299,9 +3286,6 @@
         }
       });
 
-      // ------------------------------------------------------------
-      // --- Touch Event Mapping for Mobile & Tablet Responsiveness ---
-      // ------------------------------------------------------------
       function setupTouchEvents(element) {
         let initialPinchDistance = null;
         let lastTapTime = 0;
@@ -3318,7 +3302,7 @@
                 e.touches[0].clientY - e.touches[1].clientY,
               );
             } else if (e.touches.length === 1) {
-              e.preventDefault(); // Prevent native touch scrolling
+              e.preventDefault(); 
               const touch = e.touches[0];
               const currentTime = new Date().getTime();
               const tapLength = currentTime - lastTapTime;
