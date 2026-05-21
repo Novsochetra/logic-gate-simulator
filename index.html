@@ -786,42 +786,65 @@
 
           if (this.type === "label_box") {
             ctx.save();
+            
+            const radius = 12;
+            const isSelected = selectedComponents.includes(this);
 
-            if (selectedComponents.includes(this)) {
-              ctx.fillStyle = "rgba(0, 122, 255, 0.05)";
-              ctx.strokeStyle = "#007AFF";
-              ctx.lineWidth = 2;
-              ctx.setLineDash([]);
+            // Refined Solid Colors for Label Box
+            if (isSelected) {
+              ctx.fillStyle = "#1e2a3a"; // Solid dark navy
+              ctx.strokeStyle = "#007AFF"; // Solid iOS Blue
+              ctx.lineWidth = 2.5;
             } else {
-              ctx.fillStyle = "rgba(255, 255, 255, 0.015)";
-              ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+              ctx.fillStyle = "#262626"; // Solid dark gray
+              ctx.strokeStyle = "#444444"; // Solid light gray
               ctx.lineWidth = 2;
-              ctx.setLineDash([6, 6]);
             }
 
             ctx.beginPath();
-            ctx.roundRect(this.x, this.y, this.width, this.height, 12);
+            ctx.roundRect(this.x, this.y, this.width, this.height, radius);
             ctx.fill();
             ctx.stroke();
-            ctx.setLineDash([]);
 
-            ctx.fillStyle = selectedComponents.includes(this)
-              ? "#007AFF"
-              : "rgba(255, 255, 255, 0.6)";
+            // Label text
+            ctx.fillStyle = isSelected ? "#007AFF" : "#8E8E93";
             ctx.font = "600 14px sans-serif";
             ctx.textAlign = "left";
             ctx.textBaseline = "top";
-            ctx.fillText(this.label, this.x + 14, this.y + 14);
+            ctx.fillText(this.label, this.x + 16, this.y + 16);
 
-            ctx.fillStyle = selectedComponents.includes(this)
-              ? "#007AFF"
-              : "rgba(255, 255, 255, 0.2)";
+            // REFINED Resize Handle: No transparency, merged background
+            ctx.save();
             ctx.beginPath();
-            ctx.moveTo(this.x + this.width - 16, this.y + this.height);
-            ctx.lineTo(this.x + this.width, this.y + this.height - 16);
+            // Create a path for the corner area to clip the handle triangle
+            ctx.roundRect(this.x, this.y, this.width, this.height, radius);
+            ctx.clip(); 
+
+            const handleColor = isSelected ? "#007AFF" : "#444444";
+            ctx.fillStyle = handleColor;
+            
+            const handleSize = 22;
+            ctx.beginPath();
+            // Start from the bottom edge
+            ctx.moveTo(this.x + this.width - handleSize, this.y + this.height);
+            // Go to the right edge
+            ctx.lineTo(this.x + this.width, this.y + this.height - handleSize);
+            // Close at the vertex
             ctx.lineTo(this.x + this.width, this.y + this.height);
+            ctx.closePath();
             ctx.fill();
 
+            // Diagonal grip lines inside handle
+            ctx.strokeStyle = isSelected ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(this.x + this.width - 5, this.y + this.height - 11);
+            ctx.lineTo(this.x + this.width - 11, this.y + this.height - 5);
+            ctx.moveTo(this.x + this.width - 5, this.y + this.height - 7);
+            ctx.lineTo(this.x + this.width - 7, this.y + this.height - 5);
+            ctx.stroke();
+
+            ctx.restore();
             ctx.restore();
             return;
           }
@@ -1101,9 +1124,9 @@
         getResizeHandleAt(x, y) {
           if (this.type !== "label_box" && this.type !== "label") return false;
           return (
-            x >= this.x + this.width - 20 &&
+            x >= this.x + this.width - 25 &&
             x <= this.x + this.width &&
-            y >= this.y + this.height - 20 &&
+            y >= this.y + this.height - 25 &&
             y <= this.y + this.height
           );
         }
@@ -1620,8 +1643,8 @@
         // Draw Components
         components.forEach((c) => {
           if (c.type === "label_box" || c.type === "label") {
-            minimapCtx.fillStyle = "rgba(255, 255, 255, 0.15)";
-            minimapCtx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            minimapCtx.fillStyle = "#444444";
+            minimapCtx.strokeStyle = "#666666";
           } else if (c.type === "input" || c.type === "output") {
             minimapCtx.fillStyle = c.state ? "#34C759" : "#3A3A3C";
             minimapCtx.strokeStyle = "transparent";
@@ -3339,7 +3362,7 @@
                 const centerX =
                   (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
                 const centerY =
-                  (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
                 const worldBefore = screenToWorld(centerX, centerY);
                 const zoomFactor = currentDistance / initialPinchDistance;
