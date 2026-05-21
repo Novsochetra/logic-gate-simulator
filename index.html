@@ -467,6 +467,10 @@
         Label Box
         <span class="shortcut">5</span>
       </button>
+      <button class="nav-item" data-type="label">
+        Label
+        <span class="shortcut">6</span>
+      </button>
     </div>
 
     <div class="component-popup" id="componentPopup">
@@ -475,6 +479,7 @@
       <div class="popup-item" data-type="gate">AND Gate</div>
       <div class="popup-item" data-type="not_gate">NOT Gate</div>
       <div class="popup-item" data-type="label_box">Label Box</div>
+      <div class="popup-item" data-type="label">Label</div>
     </div>
 
     <!-- Help Modal -->
@@ -490,8 +495,8 @@
             ><span class="help-desc">Show / Hide Help Menu</span>
           </div>
           <div class="help-row">
-            <span class="help-key">1 - 5</span
-            ><span class="help-desc">Add Component</span>
+            <span class="help-key">1 - 6</span
+            ><span class="help-desc">Add Component (6 for Overlay Label)</span>
           </div>
           <div class="help-row">
             <span class="help-key">V</span
@@ -684,12 +689,19 @@
           this.y = y;
           this.width = COMPONENT_WIDTH;
           this.height = COMPONENT_HEIGHT;
+          this.label = "";
 
           if (type === "label_box") {
             const snap = GRID_SIZE / 2;
             this.width = Math.round(250 / snap) * snap;
             this.height = Math.round(180 / snap) * snap;
             this.label = "Circuit Label";
+            this.inputs = [];
+            this.outputs = [];
+          } else if (type === "label") {
+            this.width = 150;
+            this.height = 40;
+            this.label = "Label Text";
             this.inputs = [];
             this.outputs = [];
           } else if (type === "input") {
@@ -735,7 +747,7 @@
             this.internalComponents.forEach(
               (c) => c.resetLogicState && c.resetLogicState(),
             );
-          } else if (this.type !== "label_box") {
+          } else if (this.type !== "label_box" && this.type !== "label") {
             this.state = false;
             this.nextState = false;
           }
@@ -752,6 +764,26 @@
         }
 
         draw() {
+          if (this.type === "label") {
+            ctx.save();
+            if (selectedComponents.includes(this)) {
+              ctx.fillStyle = "rgba(0, 122, 255, 0.1)";
+              ctx.strokeStyle = "#007AFF";
+              ctx.setLineDash([4, 4]);
+              ctx.lineWidth = 1;
+              ctx.roundRect(this.x, this.y, this.width, this.height, 4);
+              ctx.fill();
+              ctx.stroke();
+            }
+            ctx.fillStyle = "white";
+            ctx.font = "bold 18px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(this.label, this.x + this.width / 2, this.y + this.height / 2);
+            ctx.restore();
+            return;
+          }
+
           if (this.type === "label_box") {
             ctx.save();
 
@@ -1047,7 +1079,7 @@
         }
 
         getPinAt(x, y) {
-          if (this.type === "label_box") return null;
+          if (this.type === "label_box" || this.type === "label") return null;
 
           for (let pin of this.inputs) {
             const px = this.x + pin.x;
@@ -1067,7 +1099,7 @@
         }
 
         getResizeHandleAt(x, y) {
-          if (this.type !== "label_box") return false;
+          if (this.type !== "label_box" && this.type !== "label") return false;
           return (
             x >= this.x + this.width - 20 &&
             x <= this.x + this.width &&
@@ -1587,7 +1619,7 @@
 
         // Draw Components
         components.forEach((c) => {
-          if (c.type === "label_box") {
+          if (c.type === "label_box" || c.type === "label") {
             minimapCtx.fillStyle = "rgba(255, 255, 255, 0.15)";
             minimapCtx.strokeStyle = "rgba(255, 255, 255, 0.3)";
           } else if (c.type === "input" || c.type === "output") {
@@ -1644,11 +1676,19 @@
         ctx.translate(camera.x, camera.y);
         ctx.scale(camera.zoom, camera.zoom);
 
+        // Draw containers first
         components
           .filter((c) => c.type === "label_box")
           .forEach((comp) => comp.draw());
+        
+        // Logic components
         components
-          .filter((c) => c.type !== "label_box")
+          .filter((c) => c.type !== "label_box" && c.type !== "label")
+          .forEach((comp) => comp.draw());
+
+        // Labels Drawn LAST to ensure overlay
+        components
+          .filter((c) => c.type === "label")
           .forEach((comp) => comp.draw());
 
         if (isSelectingBox) {
@@ -1786,7 +1826,7 @@
 
           newComp.width = cc.width;
           newComp.height = cc.height;
-          if (cc.type === "label_box" || cc.type === "custom_ic")
+          if (cc.type === "label_box" || cc.type === "custom_ic" || cc.type === "label")
             newComp.label = cc.label;
           if (cc.type === "input") newComp.state = cc.state;
 
@@ -1962,6 +2002,9 @@
         } else if (type === "output") {
           w = GRID_SIZE;
           h = GRID_SIZE;
+        } else if (type === "label") {
+          w = 150;
+          h = 40;
         }
 
         const snap = GRID_SIZE / 2;
@@ -2058,7 +2101,7 @@
       createIcBtn.addEventListener("click", () => {
         if (selectedComponents.length === 0) return;
         const selectedComps = selectedComponents.filter(
-          (c) => c.type !== "label_box",
+          (c) => c.type !== "label_box" && c.type !== "label",
         );
         const intInputs = selectedComps
           .filter((c) => c.type === "input")
@@ -2395,7 +2438,8 @@
             pushHistory();
             editingComponent.label =
               labelEditor.value ||
-              (editingComponent.type === "custom_ic" ? "Custom IC" : "Label");
+              (editingComponent.type === "custom_ic" ? "Custom IC" : 
+               editingComponent.type === "label" ? "Label" : "Label Box");
 
             if (editingComponent.type === "custom_ic") {
               ctx.font = "bold 14px sans-serif";
@@ -2409,6 +2453,10 @@
                 editingComponent.width = newWidth;
                 editingComponent.outputs.forEach((p) => (p.x = newWidth));
               }
+            } else if (editingComponent.type === "label") {
+              ctx.font = "bold 18px sans-serif";
+              const textWidth = ctx.measureText(editingComponent.label).width;
+              editingComponent.width = Math.max(60, textWidth + 40);
             }
 
             saveToLocalStorage();
@@ -2550,6 +2598,7 @@
         else if (e.key === "3") autoSpawnComponent("gate");
         else if (e.key === "4") autoSpawnComponent("not_gate");
         else if (e.key === "5") autoSpawnComponent("label_box");
+        else if (e.key === "6") autoSpawnComponent("label");
         else if (e.key === "Escape") {
           if (helpModal.classList.contains("show")) {
             toggleHelpMenu();
@@ -2679,7 +2728,7 @@
 
         for (let comp of [...components].reverse()) {
           if (
-            comp.type === "label_box" &&
+            (comp.type === "label_box" || comp.type === "label") &&
             comp.getResizeHandleAt(world.x, world.y)
           ) {
             isResizingComponent = comp;
@@ -2693,7 +2742,16 @@
           }
         }
 
-        const logicComps = components.filter((c) => c.type !== "label_box");
+        // Check labels first as they overlay
+        const labels = components.filter((c) => c.type === "label");
+        for (let comp of [...labels].reverse()) {
+          if (comp.containsPoint(world.x, world.y)) {
+            handleComponentClick(comp, world, screenX, screenY, e);
+            return;
+          }
+        }
+
+        const logicComps = components.filter((c) => c.type !== "label_box" && c.type !== "label");
         for (let comp of [...logicComps].reverse()) {
           if (comp.containsPoint(world.x, world.y)) {
             handleComponentClick(comp, world, screenX, screenY, e);
@@ -2755,7 +2813,7 @@
         let isHoveringResize = false;
         for (let comp of components) {
           if (
-            comp.type === "label_box" &&
+            (comp.type === "label_box" || comp.type === "label") &&
             comp.getResizeHandleAt(world.x, world.y)
           ) {
             isHoveringResize = true;
@@ -2852,11 +2910,11 @@
             resizeStart.h + (world.y - dragStartWorld.y),
           );
           isResizingComponent.width = Math.max(
-            GRID_SIZE * 3,
+            GRID_SIZE * 2,
             Math.round(rawWidth / snap) * snap,
           );
           isResizingComponent.height = Math.max(
-            GRID_SIZE * 2,
+            GRID_SIZE * 1,
             Math.round(rawHeight / snap) * snap,
           );
           draw();
@@ -3022,7 +3080,7 @@
 
         for (let comp of [...components].reverse()) {
           if (
-            (comp.type === "label_box" || comp.type === "custom_ic") &&
+            (comp.type === "label_box" || comp.type === "custom_ic" || comp.type === "label") &&
             comp.containsPoint(world.x, world.y)
           ) {
             openLabelEditor(comp);

@@ -50,6 +50,21 @@ Here is Current Features We have you don't need to do anything:
 41. adding reset button to reset canvas layout size to default
 42. remember user resize canvas
 43. Adding copy / paste on mobile device
+44.Added Label Component:
+      - Visuals: Bold text, centered within its box, no border (except when
+        selected for clarity), and high z-index (drawn last).
+      - Shortcut: Press "6" to add a Label.
+      - Editing: Double-click or double-tap to edit. Press "Enter" to
+        save/submit.
+      - Behavior: It behaves as an overlay, perfect for titling sections of your
+        circuit without interfering with logic pins.
+   44.1  Navigation & UI: Added "Label" to the bottom navigation bar and the
+      "Drag-to-empty" popup menu.
+   44.2  Rendering Engine: Modified the draw() loop to ensure label types are
+      rendered after all wires and logic components to meet the "always overlay"
+      requirement.
+   44.3  Serialization: Integrated the new component into the undo/redo, copy/paste,
+      and export/import logic.
 
 ## Improvement: 
 
