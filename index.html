@@ -866,6 +866,16 @@
           }
 
           if (this.type === "input") {
+            if (this.label) {
+              ctx.save();
+              ctx.fillStyle = "#A2A2A7";
+              ctx.font = "bold 11px sans-serif";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "bottom";
+              ctx.fillText(this.label, this.x + this.width / 2, this.y - 4);
+              ctx.restore();
+            }
+
             const toggleWidth = 60;
             const toggleHeight = 32;
             const toggleX = this.x + (this.width - toggleWidth) / 2;
@@ -887,6 +897,16 @@
             ctx.roundRect(knobX, knobY, knobSize, knobSize, 6);
             ctx.fill();
           } else if (this.type === "output") {
+            if (this.label) {
+              ctx.save();
+              ctx.fillStyle = "#A2A2A7";
+              ctx.font = "bold 11px sans-serif";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "bottom";
+              ctx.fillText(this.label, this.x + this.width / 2, this.y - 4);
+              ctx.restore();
+            }
+
             ctx.fillStyle = this.state ? "#34C759" : "#2C2C2E";
             ctx.strokeStyle = this.state ? "#34C759" : "#48484A";
             ctx.lineWidth = 3;
@@ -956,6 +976,27 @@
               this.x + this.width / 2,
               this.y + this.height / 2,
             );
+
+            // Render external custom pin labels inside the IC
+            ctx.save();
+            ctx.fillStyle = "#A2A2A7";
+            ctx.font = "9px monospace";
+            ctx.textBaseline = "middle";
+
+            this.inputs.forEach((pin) => {
+              if (pin.label) {
+                ctx.textAlign = "left";
+                ctx.fillText(pin.label, this.x + 8, this.y + pin.y);
+              }
+            });
+
+            this.outputs.forEach((pin) => {
+              if (pin.label) {
+                ctx.textAlign = "right";
+                ctx.fillText(pin.label, this.x + this.width - 8, this.y + pin.y);
+              }
+            });
+            ctx.restore();
           }
 
           this.inputs.forEach((pin) => {
@@ -1808,11 +1849,13 @@
                 x: pin.x,
                 y: pin.y,
                 internalTargetId: pin.internalTargetId,
+                label: pin.label,
               }));
               base.outputs = c.outputs.map((pin) => ({
                 x: pin.x,
                 y: pin.y,
                 internalSourceId: pin.internalSourceId,
+                label: pin.label,
               }));
             }
             return base;
@@ -1850,8 +1893,15 @@
 
           newComp.width = cc.width;
           newComp.height = cc.height;
-          if (cc.type === "label_box" || cc.type === "custom_ic" || cc.type === "label")
-            newComp.label = cc.label;
+          if (
+            cc.type === "label_box" ||
+            cc.type === "custom_ic" ||
+            cc.type === "label" ||
+            cc.type === "input" ||
+            cc.type === "output"
+          ) {
+            newComp.label = cc.label || "";
+          }
           if (cc.type === "input") newComp.state = cc.state;
 
           if (cc.type === "custom_ic") {
@@ -1864,16 +1914,18 @@
             newComp.internalComponents = comps;
             newComp.internalWires = wires;
 
-            newComp.inputs = cc.inputs.map((p) => ({
+            newComp.inputs = cc.inputs.map((p, i) => ({
               x: p.x,
               y: p.y,
               internalTargetId: idMap.get(p.internalTargetId).id,
+              label: p.label || `In${i + 1}`,
               connections: [],
             }));
-            newComp.outputs = cc.outputs.map((p) => ({
+            newComp.outputs = cc.outputs.map((p, i) => ({
               x: p.x,
               y: p.y,
               internalSourceId: idMap.get(p.internalSourceId).id,
+              label: p.label || `Out${i + 1}`,
               connections: [],
             }));
 
@@ -2161,11 +2213,27 @@
           60,
           (Math.max(intInputs.length, intOutputs.length) + 1) * pinSpacing,
         );
+
         ctx.font = "bold 14px sans-serif";
         const textWidth = ctx.measureText(name).width;
+
+        // Calculate maximum width of individual pin names to properly size the IC
+        let maxInLabelLen = 0;
+        intInputs.forEach((comp, i) => {
+          const lbl = comp.label || `In${i + 1}`;
+          maxInLabelLen = Math.max(maxInLabelLen, lbl.length);
+        });
+        let maxOutLabelLen = 0;
+        intOutputs.forEach((comp, i) => {
+          const lbl = comp.label || `Out${i + 1}`;
+          maxOutLabelLen = Math.max(maxOutLabelLen, lbl.length);
+        });
+
+        const labelsReservedWidth = (maxInLabelLen + maxOutLabelLen) * 6.5 + 24;
+
         newIc.width = Math.max(
           90,
-          Math.round((textWidth + 40) / (GRID_SIZE / 2)) * (GRID_SIZE / 2),
+          Math.round((Math.max(textWidth, labelsReservedWidth) + 40) / (GRID_SIZE / 2)) * (GRID_SIZE / 2),
         );
         newIc.height =
           Math.round(requiredHeight / (GRID_SIZE / 2)) * (GRID_SIZE / 2);
@@ -2174,12 +2242,14 @@
           x: 0,
           y: (i + 1) * pinSpacing,
           internalTargetId: comp.id,
+          label: comp.label || `In${i + 1}`,
           connections: [],
         }));
         newIc.outputs = intOutputs.map((comp, i) => ({
           x: newIc.width,
           y: (i + 1) * pinSpacing,
           internalSourceId: comp.id,
+          label: comp.label || `Out${i + 1}`,
           connections: [],
         }));
 
@@ -2432,7 +2502,7 @@
 
       function openLabelEditor(comp) {
         editingComponent = comp;
-        labelEditor.value = comp.label;
+        labelEditor.value = comp.label || "";
         labelEditor.style.display = "block";
 
         const screenPos = worldToScreen(comp.x + 12, comp.y + 12);
@@ -2453,15 +2523,27 @@
             editingComponent.label =
               labelEditor.value ||
               (editingComponent.type === "custom_ic" ? "Custom IC" : 
-               editingComponent.type === "label" ? "Label" : "Label Box");
+               editingComponent.type === "label" ? "Label" : 
+               editingComponent.type === "label_box" ? "Label Box" : "");
 
             if (editingComponent.type === "custom_ic") {
               ctx.font = "bold 14px sans-serif";
               const textWidth = ctx.measureText(editingComponent.label).width;
+              
+              let maxInLabelLen = 0;
+              editingComponent.inputs.forEach((pin) => {
+                if (pin.label) maxInLabelLen = Math.max(maxInLabelLen, pin.label.length);
+              });
+              let maxOutLabelLen = 0;
+              editingComponent.outputs.forEach((pin) => {
+                if (pin.label) maxOutLabelLen = Math.max(maxOutLabelLen, pin.label.length);
+              });
+
+              const labelsReservedWidth = (maxInLabelLen + maxOutLabelLen) * 6.5 + 24;
+
               const newWidth = Math.max(
                 90,
-                Math.round((textWidth + 40) / (GRID_SIZE / 2)) *
-                  (GRID_SIZE / 2),
+                Math.round((Math.max(textWidth, labelsReservedWidth) + 40) / (GRID_SIZE / 2)) * (GRID_SIZE / 2),
               );
               if (newWidth !== editingComponent.width) {
                 editingComponent.width = newWidth;
@@ -3091,7 +3173,11 @@
 
         for (let comp of [...components].reverse()) {
           if (
-            (comp.type === "label_box" || comp.type === "custom_ic" || comp.type === "label") &&
+            (comp.type === "label_box" ||
+              comp.type === "custom_ic" ||
+              comp.type === "label" ||
+              comp.type === "input" ||
+              comp.type === "output") &&
             comp.containsPoint(world.x, world.y)
           ) {
             openLabelEditor(comp);

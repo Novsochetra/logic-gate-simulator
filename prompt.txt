@@ -67,6 +67,11 @@ Here is Current Features We have you don't need to do anything:
       and export/import logic.
 45: fix the visual bug where the Label Box resize handle (the triangle) does not
 merge cleanly with the rounded corners. change the bottom right corner triangle background to none transparent color also the border of label box to none transparent. so it can be merge well between the triangle and the bottom right corner of label box. make sure use semi-transparent background colors while maintaining fully opaque borders and a solid resize handle
+46. The double-click/double-tap editing flow now supports the Input and Output
+components, allowing to name them directly. When creating a Custom IC from
+named inputs and outputs, those names are seamlessly carried over to label the
+external pins on the IC. The IC size calculation automatically accounts for the
+width of these custom pin names to prevent overlapping.
 
 ## Improvement: 
 
