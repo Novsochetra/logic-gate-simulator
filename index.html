@@ -651,6 +651,7 @@
       // Waypoints state
       let isDraggingWaypoint = null;
       let potentialWaypoint = null;
+      let affectedWiresInitWaypoints = [];
 
       // History state (Undo/Redo & AutoSave)
       let undoStack = [];
@@ -790,7 +791,7 @@
             const radius = 12;
             const isSelected = selectedComponents.includes(this);
 
-            // UPDATED: Semi-transparent background, opaque border
+            // Semi-transparent background, opaque border
             if (isSelected) {
               ctx.fillStyle = "rgba(30, 42, 58, 0.7)"; // Transparent dark navy
               ctx.strokeStyle = "#007AFF"; // Solid iOS Blue
@@ -2749,6 +2750,23 @@
             y: c.y,
           }));
           componentDragDidMove = false;
+
+          // Initialize tracking for affected wire waypoints
+          affectedWiresInitWaypoints = [];
+          wires.forEach((wire) => {
+            const fromSelected = selectedComponents.includes(wire.from.component);
+            const toSelected = selectedComponents.includes(wire.to.component);
+            if (fromSelected || toSelected) {
+              if (wire.waypoints && wire.waypoints.length > 0) {
+                affectedWiresInitWaypoints.push({
+                  wire: wire,
+                  fromSelected: fromSelected,
+                  toSelected: toSelected,
+                  initialWaypoints: wire.waypoints.map((wp) => ({ x: wp.x, y: wp.y })),
+                });
+              }
+            }
+          });
         }
 
         draw();
@@ -3028,6 +3046,9 @@
             componentDragDidMove = true;
           }
 
+          let dispX = 0;
+          let dispY = 0;
+
           selectedComponents.forEach((c) => {
             const initPos = selectedComponentsInitPos.find(
               (pos) => pos.id === c.id,
@@ -3035,8 +3056,19 @@
             if (initPos) {
               c.x = Math.round((initPos.x + deltaX) / snap) * snap;
               c.y = Math.round((initPos.y + deltaY) / snap) * snap;
+              dispX = c.x - initPos.x;
+              dispY = c.y - initPos.y;
             }
           });
+
+          // Shift manual waypoints alongside dragged components to retain routing structure
+          affectedWiresInitWaypoints.forEach((entry) => {
+            entry.wire.waypoints = entry.initialWaypoints.map((wp) => ({
+              x: wp.x + dispX,
+              y: wp.y + dispY,
+            }));
+          });
+
           draw();
         } else if (isDraggingPin) {
           if (
@@ -3150,6 +3182,7 @@
         }
         isDraggingCanvas = false;
         canvas.style.cursor = "";
+        affectedWiresInitWaypoints = [];
 
         if (historyTempState) {
           const newState = serializeState();

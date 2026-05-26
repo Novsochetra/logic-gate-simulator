@@ -72,6 +72,10 @@ components, allowing to name them directly. When creating a Custom IC from
 named inputs and outputs, those names are seamlessly carried over to label the
 external pins on the IC. The IC size calculation automatically accounts for the
 width of these custom pin names to prevent overlapping.
+47. An enhancement has been made to the manual wire system. Now, when dragging
+components, any manual waypoints on the connected wires will move proportionally
+to preserve the exact hand-routed layout and structure of your circuit design.
+
 
 ## Improvement: 
 
