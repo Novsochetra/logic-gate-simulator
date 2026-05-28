@@ -85,6 +85,18 @@ properties are explicitly reset to a transparent state after drawing
 centered on your screen at a constant, controlled speed, preventing default
 browser page zoom interference. Also added this new shortcut entry to the help
 menu interface.
+50. Hamburger Action Menu: The top bar action buttons (Create IC, Unpack IC,
+    Copy, Paste, Delete, Export, Import, Help) are now organized inside a
+    slide-down hamburger menu in the top-left corner.
+51. Top-Right Play/Pause Control: The simulation controls are now condensed into
+    an icon-only button in the top-right corner, displaying clean vector
+    play/pause states with adaptive glowing styles and interactive tooltips.
+52. Bottom-Left Zoom Control Group: The zoom controls have been unified into a
+    single group in the bottom-left corner, featuring clean icon-only zoom
+    in/out buttons on either side of the clickable zoom percentage display.
+53. Streamlined Bottom Navigation Bar: The floating component menu has been
+    rebuilt with concise SVG icons and tooltips. The original hotkey badges
+    remain correctly positioned at the top-right of each button.
 
 
 ## Improvement: 
