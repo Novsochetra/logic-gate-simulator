@@ -1132,7 +1132,18 @@
       let selectedWaypoint = null;
       let selectedComponents = [];
       let editingComponent = null;
+      
+      // Persisted workspace clipboard
       let clipboard = null;
+      try {
+        const savedClipboard = localStorage.getItem("logicSimulatorClipboard");
+        if (savedClipboard) {
+          clipboard = JSON.parse(savedClipboard);
+        }
+      } catch (e) {
+        console.error("Failed to load clipboard from localStorage", e);
+      }
+      
       let pasteOffset = GRID_SIZE;
 
       let dragStartMousePos = { x: 0, y: 0 };
@@ -2537,7 +2548,7 @@
           selectedWaypoint = null;
           isDraggingPin = null;
           hoveredPin = null;
-          clipboard = null;
+          // clipboard preserved to enable cross-workspace copying
 
           draw();
           return true;
@@ -3078,6 +3089,11 @@
               ic.internalWires,
             );
             pasteOffset = GRID_SIZE;
+            try {
+              localStorage.setItem("logicSimulatorClipboard", JSON.stringify(clipboard));
+            } catch (e) {
+              console.error("Failed to save clipboard to localStorage", e);
+            }
           } else if (selectedIcs.length > 1) {
             alert("Please select only one Custom IC to copy its internals.");
           }
@@ -3090,6 +3106,11 @@
             );
             clipboard = serializeCircuit(selectedComponents, selectedWires);
             pasteOffset = GRID_SIZE;
+            try {
+              localStorage.setItem("logicSimulatorClipboard", JSON.stringify(clipboard));
+            } catch (e) {
+              console.error("Failed to save clipboard to localStorage", e);
+            }
           }
         }
       }

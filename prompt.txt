@@ -114,6 +114,7 @@ menu interface.
    56.4.  Interactive Modal Controls: Switch between multiple testbeds and projects
       with a responsive active indicator, quick-load trigger, and clear safety
       checks before workspace deletions.
+57. Allow Copy / Paste to different workspace.
 
 
 ## Improvement: 
