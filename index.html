@@ -8,6 +8,47 @@
     />
     <title>Logic Gate Simulator</title>
     <style>
+      :root {
+        /* Theme Colors */
+        --color-canvas-bg: #1a1a1a;
+        --color-panel-bg: rgba(30, 30, 30, 0.8);
+        --color-panel-bg-opaque: rgba(30, 30, 32, 0.95);
+        --color-dropdown-bg: rgba(30, 30, 32, 0.95);
+        --color-button-bg: rgba(44, 44, 46, 0.8);
+        --color-button-hover: rgba(60, 60, 62, 0.9);
+        --color-nav-bg: rgba(30, 30, 32, 0.85);
+        --color-editor-bg: #2c2c2e;
+        --color-modal-bg: rgba(30, 30, 30, 0.95);
+        --color-tooltip-bg: rgba(15, 15, 17, 0.95);
+        --color-overlay-bg: rgba(0, 0, 0, 0.6);
+        --color-badge-bg: #3a3a3c;
+        
+        /* Borders & Dividers */
+        --color-border-default: rgba(255, 255, 255, 0.1);
+        --color-border-subtle: rgba(255, 255, 255, 0.08);
+        --color-border-divider: rgba(255, 255, 255, 0.12);
+        --color-border-minimal: rgba(255, 255, 255, 0.05);
+
+        /* Action & Accent Tones */
+        --color-primary: #007aff;
+        --color-primary-hover: #0066cc;
+        --color-success: #34c759;
+        --color-success-bg: rgba(52, 199, 89, 0.15);
+        --color-success-border: rgba(52, 199, 89, 0.3);
+        --color-success-hover: rgba(52, 199, 89, 0.25);
+        --color-warning: #ffd60a;
+        --color-warning-bg: rgba(255, 255, 255, 0.15);
+
+        /* Text Variations */
+        --color-text-main: #ffffff;
+        --color-text-subtle: #f5f5f7;
+        --color-text-muted: rgba(255, 255, 255, 0.65);
+        --color-text-dimmed: rgba(255, 255, 255, 0.4);
+        --color-text-badge: rgba(255, 255, 255, 0.85);
+        --color-text-close: rgba(255, 255, 255, 0.6);
+        --color-text-desc: rgba(255, 255, 255, 0.8);
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -18,7 +59,7 @@
         font-family:
           -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         overflow: hidden;
-        background: #1a1a1a;
+        background: var(--color-canvas-bg);
         width: 100vw;
         height: 100vh;
         /* Prevent bouncing on mobile */
@@ -47,9 +88,9 @@
         right: 20px;
         width: 200px;
         height: 150px;
-        background: rgba(30, 30, 30, 0.8);
+        background: var(--color-panel-bg);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--color-border-default);
         border-radius: 12px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         z-index: 1000;
@@ -64,10 +105,10 @@
       [data-tooltip]::after {
         content: attr(data-tooltip);
         position: absolute;
-        background: rgba(15, 15, 17, 0.95);
+        background: var(--color-tooltip-bg);
         backdrop-filter: blur(4px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #ffffff;
+        border: 1px solid var(--color-border-default);
+        color: var(--color-text-main);
         padding: 6px 10px;
         border-radius: 6px;
         font-size: 11px;
@@ -128,10 +169,10 @@
       }
 
       .menu-btn {
-        background: rgba(44, 44, 46, 0.8);
+        background: var(--color-button-bg);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: white;
+        border: 1px solid var(--color-border-default);
+        color: var(--color-text-main);
         width: 44px;
         height: 44px;
         border-radius: 12px;
@@ -144,7 +185,7 @@
       }
 
       .menu-btn:hover {
-        background: rgba(60, 60, 62, 0.9);
+        background: var(--color-button-hover);
         transform: scale(1.05);
       }
 
@@ -156,9 +197,9 @@
         position: absolute;
         top: 54px;
         left: 0;
-        background: rgba(30, 30, 32, 0.95);
+        background: var(--color-dropdown-bg);
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--color-border-default);
         border-radius: 14px;
         padding: 6px;
         width: 220px;
@@ -175,7 +216,7 @@
       .menu-item {
         background: transparent;
         border: none;
-        color: #f5f5f7;
+        color: var(--color-text-subtle);
         padding: 10px 14px;
         border-radius: 8px;
         cursor: pointer;
@@ -190,13 +231,13 @@
       }
 
       .menu-item:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--color-border-default);
       }
 
       .menu-shortcut {
         font-size: 10px;
-        color: rgba(255, 255, 255, 0.4);
-        background: rgba(255, 255, 255, 0.08);
+        color: var(--color-text-dimmed);
+        background: var(--color-border-subtle);
         padding: 2px 6px;
         border-radius: 4px;
         font-family: monospace;
@@ -204,7 +245,7 @@
 
       .menu-divider {
         height: 1px;
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--color-border-subtle);
         margin: 4px 8px;
       }
 
@@ -214,9 +255,9 @@
         top: 20px;
         right: 20px;
         z-index: 2500;
-        background: rgba(52, 199, 89, 0.15);
-        color: #34c759;
-        border: 1px solid rgba(52, 199, 89, 0.3);
+        background: var(--color-success-bg);
+        color: var(--color-success);
+        border: 1px solid var(--color-success-border);
         width: 44px;
         height: 44px;
         border-radius: 12px;
@@ -230,7 +271,7 @@
       }
 
       .sim-control-btn:hover {
-        background: rgba(52, 199, 89, 0.25);
+        background: var(--color-success-hover);
         transform: scale(1.05);
       }
 
@@ -239,13 +280,13 @@
       }
 
       .sim-control-btn.stopped {
-        background: rgba(44, 44, 46, 0.8);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--color-button-bg);
+        color: var(--color-text-main);
+        border: 1px solid var(--color-border-default);
       }
 
       .sim-control-btn.stopped:hover {
-        background: rgba(60, 60, 62, 0.9);
+        background: var(--color-button-hover);
       }
 
       .sim-control-btn.stopped .pause-icon {
@@ -264,9 +305,9 @@
         z-index: 2500;
         display: flex;
         align-items: center;
-        background: rgba(44, 44, 46, 0.8);
+        background: var(--color-button-bg);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--color-border-default);
         border-radius: 14px;
         padding: 4px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
@@ -275,7 +316,7 @@
       .zoom-btn {
         background: transparent;
         border: none;
-        color: white;
+        color: var(--color-text-main);
         width: 36px;
         height: 36px;
         border-radius: 10px;
@@ -288,7 +329,7 @@
       }
 
       .zoom-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--color-border-default);
       }
 
       .zoom-btn:active {
@@ -297,7 +338,7 @@
 
       .zoom-indicator {
         padding: 0 10px;
-        color: white;
+        color: var(--color-text-main);
         font-size: 12px;
         font-weight: 600;
         cursor: pointer;
@@ -317,9 +358,9 @@
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(30, 30, 32, 0.85);
+        background: var(--color-nav-bg);
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--color-border-subtle);
         border-radius: 20px;
         padding: 8px;
         display: flex;
@@ -334,7 +375,7 @@
         width: 44px;
         height: 44px;
         border-radius: 12px;
-        color: rgba(255, 255, 255, 0.65);
+        color: var(--color-text-muted);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -345,8 +386,8 @@
       }
 
       .nav-item:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: white;
+        background: var(--color-border-subtle);
+        color: var(--color-text-main);
       }
 
       .nav-item:active {
@@ -354,19 +395,19 @@
       }
 
       .nav-item.active {
-        background: #007aff;
-        color: white;
+        background: var(--color-primary);
+        color: var(--color-text-main);
         box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
       }
 
       .nav-item.active:hover {
-        background: #0066cc;
+        background: var(--color-primary-hover);
       }
 
       .nav-divider {
         width: 1px;
         height: 28px;
-        background: rgba(255, 255, 255, 0.12);
+        background: var(--color-border-divider);
         margin: auto 4px;
         flex-shrink: 0;
       }
@@ -375,9 +416,9 @@
         position: absolute;
         top: -4px;
         right: -4px;
-        background: #3a3a3c;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.85);
+        background: var(--color-badge-bg);
+        border: 1px solid var(--color-border-default);
+        color: var(--color-text-badge);
         width: 16px;
         height: 16px;
         border-radius: 50%;
@@ -391,14 +432,14 @@
       }
 
       .nav-item.active .shortcut {
-        background: #ffffff;
-        color: #007aff;
-        border-color: #ffffff;
+        background: var(--color-text-main);
+        color: var(--color-primary);
+        border-color: var(--color-text-main);
       }
 
       .component-popup {
         position: fixed;
-        background: rgba(30, 30, 30, 0.95);
+        background: var(--color-panel-bg-opaque);
         backdrop-filter: blur(10px);
         border-radius: 12px;
         padding: 8px;
@@ -413,7 +454,7 @@
 
       .popup-item {
         padding: 12px 20px;
-        color: white;
+        color: var(--color-text-main);
         cursor: pointer;
         border-radius: 8px;
         transition: background 0.2s;
@@ -422,16 +463,16 @@
 
       .popup-item:hover,
       .popup-item.selected {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--color-border-default);
       }
 
       .label-editor {
         position: fixed;
         display: none;
         z-index: 3000;
-        background: #2c2c2e;
-        color: white;
-        border: 2px solid #007aff;
+        background: var(--color-editor-bg);
+        color: var(--color-text-main);
+        border: 2px solid var(--color-primary);
         border-radius: 6px;
         padding: 2px 6px;
         font-family: sans-serif;
@@ -449,7 +490,7 @@
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: rgba(0, 0, 0, 0.6);
+        background: var(--color-overlay-bg);
         backdrop-filter: blur(4px);
         z-index: 4000;
         display: flex;
@@ -466,8 +507,8 @@
       }
 
       .help-content {
-        background: rgba(30, 30, 30, 0.95);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--color-modal-bg);
+        border: 1px solid var(--color-border-default);
         border-radius: 16px;
         padding: 24px;
         width: 520px;
@@ -475,7 +516,7 @@
         max-height: 90vh;
         overflow-y: auto;
         box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
-        color: white;
+        color: var(--color-text-main);
         transform: translateY(20px);
         transition: transform 0.2s;
       }
@@ -489,7 +530,7 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--color-border-default);
         padding-bottom: 12px;
       }
 
@@ -501,7 +542,7 @@
       #closeHelpBtn {
         background: none;
         border: none;
-        color: rgba(255, 255, 255, 0.6);
+        color: var(--color-text-close);
         font-size: 24px;
         cursor: pointer;
         transition: color 0.2s;
@@ -509,7 +550,7 @@
       }
 
       #closeHelpBtn:hover {
-        color: white;
+        color: var(--color-text-main);
       }
 
       .help-grid {
@@ -522,7 +563,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid var(--color-border-minimal);
         padding-bottom: 8px;
       }
 
@@ -532,17 +573,17 @@
       }
 
       .help-key {
-        background: rgba(255, 255, 255, 0.15);
+        background: var(--color-warning-bg);
         padding: 4px 8px;
         border-radius: 6px;
         font-family: monospace;
         font-size: 13px;
-        color: #ffd60a;
+        color: var(--color-warning);
       }
 
       .help-desc {
         font-size: 14px;
-        color: rgba(255, 255, 255, 0.8);
+        color: var(--color-text-desc);
         text-align: right;
       }
 
@@ -855,6 +896,94 @@
       const menuBtn = document.getElementById("menuBtn");
       const menuDropdown = document.getElementById("menuDropdown");
 
+      // Design Token Theme Configuration (JavaScript/Canvas colors)
+      const THEME = {
+        // Canvas & Grid lines
+        gridLine: "rgba(255, 255, 255, 0.05)",
+        canvasBg: "#1a1a1a",
+
+        // Selection & Component highlighting bounds
+        selectionFill: "rgba(0, 122, 255, 0.15)",
+        selectionStroke: "#007aff",
+        highlightFill: "rgba(255, 214, 10, 0.1)",
+        highlightStroke: "#ffd60a",
+
+        // Label Box Components
+        labelBoxSelectedBg: "rgba(30, 42, 58, 0.7)",
+        labelBoxSelectedBorder: "#007aff",
+        labelBoxDefaultBg: "rgba(38, 38, 38, 0.6)",
+        labelBoxDefaultBorder: "#444444",
+        labelBoxTextSelected: "#007aff",
+        labelBoxTextDefault: "#8e8e93",
+        labelBoxHandleSelected: "#007aff",
+        labelBoxHandleDefault: "#444444",
+        labelBoxGripSelected: "rgba(255, 255, 255, 0.6)",
+        labelBoxGripDefault: "rgba(255, 255, 255, 0.2)",
+
+        // Label Overlay Components
+        labelOverlaySelectedBg: "rgba(0, 122, 255, 0.1)",
+        labelOverlaySelectedStroke: "#007aff",
+        labelOverlayText: "white",
+
+        // Input & Output Components
+        labelText: "#a2a2a7",
+        inputActiveBg: "#34c759",
+        inputInactiveBg: "#3a3a3c",
+        knobBg: "white",
+        outputActiveBg: "#34c759",
+        outputInactiveBg: "#2c2c2e",
+        outputActiveBorder: "#34c759",
+        outputInactiveBorder: "#48484a",
+        outputActiveGlow: "rgba(52, 199, 89, 0.4)",
+
+        // Standard Logic Gates
+        gateActiveBg: "#5856d6",
+        gateInactiveBg: "#2c2c2e",
+        gateActiveBorder: "#7d7aff",
+        gateInactiveBorder: "#48484a",
+        gateActiveText: "white",
+        gateInactiveText: "#8e8e93",
+
+        // Custom Integrated Circuits
+        customIcBg: "#2c2c2e",
+        customIcBorder: "#48484a",
+        customIcLabel: "white",
+        customIcPinLabel: "#a2a2a7",
+
+        // Connectors / Pins
+        pinInputFill: "#007aff",
+        pinOutputFill: "#ff9500",
+        pinSelectedStroke: "#ffd60a",
+        pinSelectedGlow: "#ffd60a",
+        pinCenterDot: "white",
+        pinHoverGlowInputStart: "rgba(0, 122, 255, 0.4)",
+        pinHoverGlowInputEnd: "rgba(0, 122, 255, 0)",
+        pinHoverGlowOutputStart: "rgba(255, 149, 0, 0.4)",
+        pinHoverGlowOutputEnd: "rgba(255, 149, 0, 0)",
+
+        // Wire Graphics
+        wireBackground: "#1a1a1a",
+        wireActive: "#34c759",
+        wireInactive: "#666",
+        wireSelected: "#34c759",
+        wireSelectedGlow: "#34c759",
+        wireSelectedInner: "rgba(255, 255, 255, 0.5)",
+        wireDragging: "#007aff",
+
+        // Routing Waypoints
+        waypointActiveBg: "#ffd60a",
+        waypointInactiveBg: "#2c2c2e",
+        waypointActiveStroke: "#ffd60a",
+        waypointInactiveStroke: "#34c759",
+        waypointShadow: "#ffd60a",
+
+        // Minimap Render Properties
+        minimapLabelBg: "#444444",
+        minimapLabelBorder: "#666666",
+        minimapViewportBg: "rgba(0, 122, 255, 0.1)",
+        minimapViewportBorder: "#007aff",
+      };
+
       // Constants
       const GRID_SIZE = 30;
       const PIN_RADIUS = 6;
@@ -1029,15 +1158,15 @@
           if (this.type === "label") {
             ctx.save();
             if (selectedComponents.includes(this)) {
-              ctx.fillStyle = "rgba(0, 122, 255, 0.1)";
-              ctx.strokeStyle = "#007AFF";
+              ctx.fillStyle = THEME.labelOverlaySelectedBg;
+              ctx.strokeStyle = THEME.labelOverlaySelectedStroke;
               ctx.setLineDash([4, 4]);
               ctx.lineWidth = 1;
               ctx.roundRect(this.x, this.y, this.width, this.height, 4);
               ctx.fill();
               ctx.stroke();
             }
-            ctx.fillStyle = "white";
+            ctx.fillStyle = THEME.labelOverlayText;
             ctx.font = "bold 18px sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -1054,12 +1183,12 @@
 
             // Semi-transparent background, opaque border
             if (isSelected) {
-              ctx.fillStyle = "rgba(30, 42, 58, 0.7)"; // Transparent dark navy
-              ctx.strokeStyle = "#007AFF"; // Solid iOS Blue
+              ctx.fillStyle = THEME.labelBoxSelectedBg;
+              ctx.strokeStyle = THEME.labelBoxSelectedBorder;
               ctx.lineWidth = 2.5;
             } else {
-              ctx.fillStyle = "rgba(38, 38, 38, 0.6)"; // Transparent dark gray
-              ctx.strokeStyle = "#444444"; // Solid light gray
+              ctx.fillStyle = THEME.labelBoxDefaultBg;
+              ctx.strokeStyle = THEME.labelBoxDefaultBorder;
               ctx.lineWidth = 2;
             }
 
@@ -1069,7 +1198,7 @@
             ctx.stroke();
 
             // Label text
-            ctx.fillStyle = isSelected ? "#007AFF" : "#8E8E93";
+            ctx.fillStyle = isSelected ? THEME.labelBoxTextSelected : THEME.labelBoxTextDefault;
             ctx.font = "600 14px sans-serif";
             ctx.textAlign = "left";
             ctx.textBaseline = "top";
@@ -1081,7 +1210,7 @@
             ctx.roundRect(this.x, this.y, this.width, this.height, radius);
             ctx.clip(); 
 
-            const handleColor = isSelected ? "#007AFF" : "#444444";
+            const handleColor = isSelected ? THEME.labelBoxHandleSelected : THEME.labelBoxHandleDefault;
             ctx.fillStyle = handleColor; 
             
             const handleSize = 22;
@@ -1093,7 +1222,7 @@
             ctx.fill();
 
             // Diagonal grip lines inside handle
-            ctx.strokeStyle = isSelected ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)";
+            ctx.strokeStyle = isSelected ? THEME.labelBoxGripSelected : THEME.labelBoxGripDefault;
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.moveTo(this.x + this.width - 5, this.y + this.height - 11);
@@ -1111,8 +1240,8 @@
 
           if (selectedComponents.includes(this)) {
             ctx.save();
-            ctx.fillStyle = "rgba(255, 214, 10, 0.1)";
-            ctx.strokeStyle = "#FFD60A";
+            ctx.fillStyle = THEME.highlightFill;
+            ctx.strokeStyle = THEME.highlightStroke;
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.roundRect(
@@ -1130,7 +1259,7 @@
           if (this.type === "input") {
             if (this.label) {
               ctx.save();
-              ctx.fillStyle = "#A2A2A7";
+              ctx.fillStyle = THEME.labelText;
               ctx.font = "bold 11px sans-serif";
               ctx.textAlign = "center";
               ctx.textBaseline = "bottom";
@@ -1143,7 +1272,7 @@
             const toggleX = this.x + (this.width - toggleWidth) / 2;
             const toggleY = this.y + (this.height - toggleHeight) / 2;
 
-            ctx.fillStyle = this.state ? "#34C759" : "#3A3A3C";
+            ctx.fillStyle = this.state ? THEME.inputActiveBg : THEME.inputInactiveBg;
             ctx.beginPath();
             ctx.roundRect(toggleX, toggleY, toggleWidth, toggleHeight, 8);
             ctx.fill();
@@ -1154,14 +1283,14 @@
               : toggleX + 4;
             const knobY = toggleY + 4;
 
-            ctx.fillStyle = "white";
+            ctx.fillStyle = THEME.knobBg;
             ctx.beginPath();
             ctx.roundRect(knobX, knobY, knobSize, knobSize, 6);
             ctx.fill();
           } else if (this.type === "output") {
             if (this.label) {
               ctx.save();
-              ctx.fillStyle = "#A2A2A7";
+              ctx.fillStyle = THEME.labelText;
               ctx.font = "bold 11px sans-serif";
               ctx.textAlign = "center";
               ctx.textBaseline = "bottom";
@@ -1169,8 +1298,8 @@
               ctx.restore();
             }
 
-            ctx.fillStyle = this.state ? "#34C759" : "#2C2C2E";
-            ctx.strokeStyle = this.state ? "#34C759" : "#48484A";
+            ctx.fillStyle = this.state ? THEME.outputActiveBg : THEME.outputInactiveBg;
+            ctx.strokeStyle = this.state ? THEME.outputActiveBorder : THEME.outputInactiveBorder;
             ctx.lineWidth = 3;
 
             ctx.beginPath();
@@ -1185,7 +1314,7 @@
             ctx.stroke();
 
             if (this.state) {
-              ctx.fillStyle = "rgba(52, 199, 89, 0.4)";
+              ctx.fillStyle = THEME.outputActiveGlow;
               ctx.beginPath();
               ctx.roundRect(
                 this.x + 6,
@@ -1202,15 +1331,15 @@
             const chipX = this.x + (this.width - chipWidth) / 2;
             const chipY = this.y + (this.height - chipHeight) / 2;
 
-            ctx.fillStyle = this.state ? "#5856D6" : "#2C2C2E";
-            ctx.strokeStyle = this.state ? "#7D7AFF" : "#48484A";
+            ctx.fillStyle = this.state ? THEME.gateActiveBg : THEME.gateInactiveBg;
+            ctx.strokeStyle = this.state ? THEME.gateActiveBorder : THEME.gateInactiveBorder;
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.roundRect(chipX, chipY, chipWidth, chipHeight, 6);
             ctx.fill();
             ctx.stroke();
 
-            ctx.fillStyle = this.state ? "white" : "#8E8E93";
+            ctx.fillStyle = this.state ? THEME.gateActiveText : THEME.gateInactiveText;
             ctx.font = "bold 14px monospace";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -1221,15 +1350,15 @@
               this.y + this.height / 2,
             );
           } else if (this.type === "custom_ic") {
-            ctx.fillStyle = "#2C2C2E";
-            ctx.strokeStyle = "#48484A";
+            ctx.fillStyle = THEME.customIcBg;
+            ctx.strokeStyle = THEME.customIcBorder;
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.roundRect(this.x, this.y, this.width, this.height, 8);
             ctx.fill();
             ctx.stroke();
 
-            ctx.fillStyle = "white";
+            ctx.fillStyle = THEME.customIcLabel;
             ctx.font = "bold 14px sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -1241,7 +1370,7 @@
 
             // Render external custom pin labels inside the IC
             ctx.save();
-            ctx.fillStyle = "#A2A2A7";
+            ctx.fillStyle = THEME.customIcPinLabel;
             ctx.font = "9px monospace";
             ctx.textBaseline = "middle";
 
@@ -1283,8 +1412,8 @@
                 py,
                 PIN_RADIUS * 4,
               );
-              gradient.addColorStop(0, "rgba(0, 122, 255, 0.4)");
-              gradient.addColorStop(1, "rgba(0, 122, 255, 0)");
+              gradient.addColorStop(0, THEME.pinHoverGlowInputStart);
+              gradient.addColorStop(1, THEME.pinHoverGlowInputEnd);
               ctx.fillStyle = gradient;
               ctx.beginPath();
               ctx.arc(px, py, PIN_RADIUS * 4, 0, Math.PI * 2);
@@ -1292,9 +1421,9 @@
             }
 
             if (isSelected) {
-              ctx.strokeStyle = "#FFD60A";
+              ctx.strokeStyle = THEME.pinSelectedStroke;
               ctx.lineWidth = 3;
-              ctx.shadowColor = "#FFD60A";
+              ctx.shadowColor = THEME.pinSelectedGlow;
               ctx.shadowBlur = 15;
               ctx.beginPath();
               ctx.arc(px, py, PIN_RADIUS * 2.5, 0, Math.PI * 2);
@@ -1303,13 +1432,13 @@
               ctx.shadowColor = "transparent";
             }
 
-            ctx.fillStyle = "#007AFF";
+            ctx.fillStyle = THEME.pinInputFill;
             ctx.beginPath();
             ctx.arc(px, py, PIN_RADIUS, 0, Math.PI * 2);
             ctx.fill();
 
             if (isSelected) {
-              ctx.fillStyle = "white";
+              ctx.fillStyle = THEME.pinCenterDot;
               ctx.beginPath();
               ctx.arc(px, py, PIN_RADIUS * 0.5, 0, Math.PI * 2);
               ctx.fill();
@@ -1338,8 +1467,8 @@
                 py,
                 PIN_RADIUS * 4,
               );
-              gradient.addColorStop(0, "rgba(255, 149, 0, 0.4)");
-              gradient.addColorStop(1, "rgba(255, 149, 0, 0)");
+              gradient.addColorStop(0, THEME.pinHoverGlowOutputStart);
+              gradient.addColorStop(1, THEME.pinHoverGlowOutputEnd);
               ctx.fillStyle = gradient;
               ctx.beginPath();
               ctx.arc(px, py, PIN_RADIUS * 4, 0, Math.PI * 2);
@@ -1347,9 +1476,9 @@
             }
 
             if (isSelected) {
-              ctx.strokeStyle = "#FFD60A";
+              ctx.strokeStyle = THEME.pinSelectedStroke;
               ctx.lineWidth = 3;
-              ctx.shadowColor = "#FFD60A";
+              ctx.shadowColor = THEME.pinSelectedGlow;
               ctx.shadowBlur = 15;
               ctx.beginPath();
               ctx.arc(px, py, PIN_RADIUS * 2.5, 0, Math.PI * 2);
@@ -1358,13 +1487,13 @@
               ctx.shadowColor = "transparent";
             }
 
-            ctx.fillStyle = "#FF9500";
+            ctx.fillStyle = THEME.pinOutputFill;
             ctx.beginPath();
             ctx.arc(px, py, PIN_RADIUS, 0, Math.PI * 2);
             ctx.fill();
 
             if (isSelected) {
-              ctx.fillStyle = "white";
+              ctx.fillStyle = THEME.pinCenterDot;
               ctx.beginPath();
               ctx.arc(px, py, PIN_RADIUS * 0.5, 0, Math.PI * 2);
               ctx.fill();
@@ -1602,7 +1731,7 @@
         const canvasWidth = canvas.width / dpr;
         const canvasHeight = canvas.height / dpr;
 
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.strokeStyle = THEME.gridLine;
         ctx.lineWidth = 1;
 
         const startX =
@@ -1779,18 +1908,18 @@
           const screenPoints = points.map((p) => worldToScreen(p.x, p.y));
 
           // Wire Outline / Crossing Gap Effect
-          ctx.strokeStyle = "#1a1a1a";
+          ctx.strokeStyle = THEME.wireBackground;
           ctx.lineWidth = 11;
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
           drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
 
           if (isWireSelected) {
-            ctx.strokeStyle = "#34C759";
+            ctx.strokeStyle = THEME.wireSelected;
             ctx.lineWidth = 7;
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
-            ctx.shadowColor = "#34C759";
+            ctx.shadowColor = THEME.wireSelectedGlow;
             ctx.shadowBlur = 20;
             drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
             ctx.shadowBlur = 0;
@@ -1798,17 +1927,17 @@
           }
 
           ctx.strokeStyle = isWireSelected
-            ? "#34C759"
+            ? THEME.wireSelected
             : isWireActive
-              ? "#34C759"
-              : "#666";
+              ? THEME.wireActive
+              : THEME.wireInactive;
           ctx.lineWidth = 3;
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
           drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
 
           if (isWireSelected) {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.strokeStyle = THEME.wireSelectedInner;
             ctx.lineWidth = 1;
             drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
 
@@ -1821,11 +1950,11 @@
                   selectedWaypoint.wire === wire &&
                   selectedWaypoint.index === index;
 
-                ctx.fillStyle = isWpSelected ? "#FFD60A" : "#2C2C2E";
-                ctx.strokeStyle = isWpSelected ? "#FFD60A" : "#34C759";
+                ctx.fillStyle = isWpSelected ? THEME.waypointActiveBg : THEME.waypointInactiveBg;
+                ctx.strokeStyle = isWpSelected ? THEME.waypointActiveStroke : THEME.waypointInactiveStroke;
 
                 if (isWpSelected) {
-                  ctx.shadowColor = "#FFD60A";
+                  ctx.shadowColor = THEME.waypointShadow;
                   ctx.shadowBlur = 10;
                 }
 
@@ -1930,7 +2059,7 @@
         }
 
         // Draw Map Grid
-        minimapCtx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+        minimapCtx.strokeStyle = THEME.gridLine;
         minimapCtx.lineWidth = 1;
         minimapCtx.beginPath();
         const gridSpacing = GRID_SIZE * minimapConfig.mapScale;
@@ -1960,7 +2089,7 @@
             minimapCtx.lineJoin = "round";
 
             minimapCtx.beginPath();
-            minimapCtx.strokeStyle = "#1a1a1a";
+            minimapCtx.strokeStyle = THEME.wireBackground;
             minimapCtx.lineWidth = 4;
             minimapCtx.moveTo(mmX(path[0].x), mmY(path[0].y));
             for (let i = 1; i < path.length; i++) {
@@ -1970,8 +2099,8 @@
 
             minimapCtx.beginPath();
             minimapCtx.strokeStyle = w.from.component.getOutputState(w.from.pin)
-              ? "#34C759"
-              : "#666";
+              ? THEME.wireActive
+              : THEME.wireInactive;
             minimapCtx.lineWidth = 1.5;
             minimapCtx.moveTo(mmX(path[0].x), mmY(path[0].y));
             for (let i = 1; i < path.length; i++) {
@@ -1984,17 +2113,17 @@
         // Draw Components
         components.forEach((c) => {
           if (c.type === "label_box" || c.type === "label") {
-            minimapCtx.fillStyle = "#444444";
-            minimapCtx.strokeStyle = "#666666";
+            minimapCtx.fillStyle = THEME.minimapLabelBg;
+            minimapCtx.strokeStyle = THEME.minimapLabelBorder;
           } else if (c.type === "input" || c.type === "output") {
-            minimapCtx.fillStyle = c.state ? "#34C759" : "#3A3A3C";
+            minimapCtx.fillStyle = c.state ? THEME.inputActiveBg : THEME.inputInactiveBg;
             minimapCtx.strokeStyle = "transparent";
           } else if (c.type === "custom_ic") {
-            minimapCtx.fillStyle = "#2C2C2E";
-            minimapCtx.strokeStyle = "#48484A";
+            minimapCtx.fillStyle = THEME.customIcBg;
+            minimapCtx.strokeStyle = THEME.customIcBorder;
           } else {
-            minimapCtx.fillStyle = c.state ? "#5856D6" : "#2C2C2E";
-            minimapCtx.strokeStyle = c.state ? "#7D7AFF" : "#48484A";
+            minimapCtx.fillStyle = c.state ? THEME.gateActiveBg : THEME.gateInactiveBg;
+            minimapCtx.strokeStyle = c.state ? THEME.gateActiveBorder : THEME.gateInactiveBorder;
           }
 
           const x = mmX(c.x);
@@ -2014,8 +2143,8 @@
         const vy = mmY(visMinY);
         const vw = (visMaxX - visMinX) * minimapConfig.mapScale;
         const vh = (visMaxY - visMinY) * minimapConfig.mapScale;
-        minimapCtx.fillStyle = "rgba(0, 122, 255, 0.1)";
-        minimapCtx.strokeStyle = "#007AFF";
+        minimapCtx.fillStyle = THEME.minimapViewportBg;
+        minimapCtx.strokeStyle = THEME.minimapViewportBorder;
         minimapCtx.lineWidth = 2;
         minimapCtx.fillRect(vx, vy, vw, vh);
         minimapCtx.strokeRect(vx, vy, vw, vh);
@@ -2061,8 +2190,8 @@
 
         // Selection Box
         if (isSelectingBox) {
-          ctx.fillStyle = "rgba(0, 122, 255, 0.15)";
-          ctx.strokeStyle = "#007AFF";
+          ctx.fillStyle = THEME.selectionFill;
+          ctx.strokeStyle = THEME.selectionStroke;
           ctx.lineWidth = 1 / camera.zoom;
 
           const x = selectionBoxStart.x;
@@ -2114,13 +2243,13 @@
           );
           const screenPoints = points.map((p) => worldToScreen(p.x, p.y));
 
-          ctx.strokeStyle = "#1a1a1a";
+          ctx.strokeStyle = THEME.wireBackground;
           ctx.lineWidth = 11;
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
           drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
 
-          ctx.strokeStyle = "#007AFF";
+          ctx.strokeStyle = THEME.wireDragging;
           ctx.lineWidth = 3;
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
