@@ -483,7 +483,7 @@
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       }
 
-      /* Help Modal Styles */
+      /* Help & Workspace Modal Styles */
       .modal-overlay {
         position: fixed;
         top: 0;
@@ -539,7 +539,7 @@
         font-weight: 600;
       }
 
-      #closeHelpBtn {
+      #closeHelpBtn, #closeWorkspaceBtn {
         background: none;
         border: none;
         color: var(--color-text-close);
@@ -549,7 +549,7 @@
         outline: none;
       }
 
-      #closeHelpBtn:hover {
+      #closeHelpBtn:hover, #closeWorkspaceBtn:hover {
         color: var(--color-text-main);
       }
 
@@ -585,6 +585,82 @@
         font-size: 14px;
         color: var(--color-text-desc);
         text-align: right;
+      }
+
+      /* Workspace Custom List Styles */
+      .workspace-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        margin-bottom: 8px;
+      }
+      .workspace-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.15);
+      }
+      .workspace-item.active {
+        border-color: var(--color-primary);
+        background: rgba(0, 122, 255, 0.08);
+      }
+      .workspace-name-container {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        overflow: hidden;
+        padding-right: 8px;
+      }
+      .workspace-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--color-text-main);
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+      .workspace-status {
+        font-size: 11px;
+        color: var(--color-text-dimmed);
+      }
+      .workspace-item.active .workspace-status {
+        color: var(--color-success);
+        font-weight: 600;
+      }
+      .workspace-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .workspace-action-btn {
+        background: var(--color-button-bg);
+        border: 1px solid var(--color-border-subtle);
+        color: var(--color-text-subtle);
+        padding: 6px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.15s ease;
+      }
+      .workspace-action-btn:hover {
+        background: var(--color-button-hover);
+        color: var(--color-text-main);
+      }
+      .workspace-action-btn.delete {
+        color: #ff453a;
+        border-color: rgba(255, 69, 58, 0.2);
+      }
+      .workspace-action-btn.delete:hover {
+        background: rgba(255, 69, 58, 0.15);
+        border-color: #ff453a;
+      }
+      #newWorkspaceName:focus {
+        border-color: var(--color-primary) !important;
+        outline: none;
       }
 
       /* Mobile Responsive Layout */
@@ -660,6 +736,8 @@
         </svg>
       </button>
       <div class="menu-dropdown" id="menuDropdown">
+        <button class="menu-item" id="workspacesBtn">📂 Workspaces</button>
+        <div class="menu-divider"></div>
         <button class="menu-item" id="createIcBtn">📦 Create IC <span class="menu-shortcut">G</span></button>
         <button class="menu-item" id="unpackIcBtn">💥 Unpack IC <span class="menu-shortcut">Shift+G</span></button>
         <div class="menu-divider"></div>
@@ -863,6 +941,23 @@
       </div>
     </div>
 
+    <!-- Workspace Modal -->
+    <div class="modal-overlay" id="workspaceModal">
+      <div class="help-content" style="width: 450px;">
+        <div class="help-header">
+          <h2>Manage Workspaces</h2>
+          <button id="closeWorkspaceBtn">&times;</button>
+        </div>
+        <div style="margin-bottom: 20px; display: flex; gap: 8px;">
+          <input type="text" id="newWorkspaceName" placeholder="Workspace name..." style="flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--color-border-default); background: var(--color-editor-bg); color: var(--color-text-main); font-size: 14px;" />
+          <button id="saveWorkspaceBtn" style="background: var(--color-primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.1s;">Save Current</button>
+        </div>
+        <div id="workspaceList" style="display: flex; flex-direction: column; max-height: 300px; overflow-y: auto; border-top: 1px solid var(--color-border-subtle); padding-top: 12px;">
+          <!-- Managed workspaces generated programmatically -->
+        </div>
+      </div>
+    </div>
+
     <input
       type="text"
       id="labelEditor"
@@ -891,6 +986,14 @@
       const copyBtn = document.getElementById("copyBtn");
       const pasteBtn = document.getElementById("pasteBtn");
       const deleteBtn = document.getElementById("deleteBtn");
+
+      // Workspace Control Elements
+      const workspacesBtn = document.getElementById("workspacesBtn");
+      const workspaceModal = document.getElementById("workspaceModal");
+      const closeWorkspaceBtn = document.getElementById("closeWorkspaceBtn");
+      const saveWorkspaceBtn = document.getElementById("saveWorkspaceBtn");
+      const newWorkspaceNameInput = document.getElementById("newWorkspaceName");
+      const workspaceList = document.getElementById("workspaceList");
 
       // Menu Toggle Elements
       const menuBtn = document.getElementById("menuBtn");
@@ -996,6 +1099,10 @@
       let wires = [];
       let nextId = 1;
       let dpr = window.devicePixelRatio || 1;
+
+      // Workspaces State
+      let workspaces = [];
+      let activeWorkspaceId = "default";
 
       // Minimap State
       let isDraggingMinimap = false;
@@ -2441,7 +2548,14 @@
       }
 
       function saveToLocalStorage() {
-        localStorage.setItem("logicSimulatorAutoSave", serializeState());
+        const state = serializeState();
+        localStorage.setItem("logicSimulatorAutoSave", state);
+
+        const currentWS = workspaces.find((w) => w.id === activeWorkspaceId);
+        if (currentWS) {
+          currentWS.data = state;
+          saveWorkspacesToLocalStorage();
+        }
       }
 
       function pushHistory(stateToPush = serializeState()) {
@@ -2470,7 +2584,156 @@
         saveToLocalStorage();
       }
 
-      // Boot-up AutoLoad
+      // --- Workspace Core Management ---
+      function initWorkspaces() {
+        const savedList = localStorage.getItem("logicSimulatorWorkspaces");
+        const savedActiveId = localStorage.getItem("logicSimulatorActiveWorkspaceId");
+        
+        if (savedList) {
+          try {
+            workspaces = JSON.parse(savedList);
+          } catch(e) {
+            workspaces = [];
+          }
+        }
+        
+        if (savedActiveId) {
+          activeWorkspaceId = savedActiveId;
+        } else {
+          activeWorkspaceId = "default";
+        }
+
+        if (workspaces.length === 0) {
+          const autoSaveData = localStorage.getItem("logicSimulatorAutoSave") || serializeState();
+          workspaces.push({
+            id: "default",
+            name: "Default Workspace",
+            data: autoSaveData
+          });
+          activeWorkspaceId = "default";
+          saveWorkspacesToLocalStorage();
+        }
+      }
+
+      function saveWorkspacesToLocalStorage() {
+        localStorage.setItem("logicSimulatorWorkspaces", JSON.stringify(workspaces));
+        localStorage.setItem("logicSimulatorActiveWorkspaceId", activeWorkspaceId);
+      }
+
+      function renderWorkspaceList() {
+        workspaceList.innerHTML = "";
+        workspaces.forEach((ws) => {
+          const item = document.createElement("div");
+          item.className = `workspace-item ${ws.id === activeWorkspaceId ? "active" : ""}`;
+          
+          const nameContainer = document.createElement("div");
+          nameContainer.className = "workspace-name-container";
+          
+          const nameSpan = document.createElement("span");
+          nameSpan.className = "workspace-name";
+          nameSpan.textContent = ws.name;
+          
+          const statusSpan = document.createElement("span");
+          statusSpan.className = "workspace-status";
+          statusSpan.textContent = ws.id === activeWorkspaceId ? "Active Workspace" : "Inactive";
+          
+          nameContainer.appendChild(nameSpan);
+          nameContainer.appendChild(statusSpan);
+          item.appendChild(nameContainer);
+          
+          const actions = document.createElement("div");
+          actions.className = "workspace-actions";
+          
+          if (ws.id !== activeWorkspaceId) {
+            const loadBtn = document.createElement("button");
+            loadBtn.className = "workspace-action-btn";
+            loadBtn.textContent = "Load";
+            loadBtn.addEventListener("click", () => {
+              switchWorkspace(ws.id);
+            });
+            actions.appendChild(loadBtn);
+          }
+          
+          if (workspaces.length > 1) {
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "workspace-action-btn delete";
+            deleteBtn.textContent = "Delete";
+            deleteBtn.addEventListener("click", () => {
+              deleteWorkspace(ws.id);
+            });
+            actions.appendChild(deleteBtn);
+          }
+          
+          item.appendChild(actions);
+          workspaceList.appendChild(item);
+        });
+      }
+
+      function switchWorkspace(id) {
+        activeWorkspaceId = id;
+        saveWorkspacesToLocalStorage();
+        
+        const targetWS = workspaces.find((w) => w.id === id);
+        if (targetWS && targetWS.data) {
+          loadSerializedState(targetWS.data);
+        }
+        
+        renderWorkspaceList();
+        draw();
+      }
+
+      function deleteWorkspace(id) {
+        if (confirm("Are you sure you want to delete this workspace? All contents will be permanently lost.")) {
+          workspaces = workspaces.filter((w) => w.id !== id);
+          if (activeWorkspaceId === id) {
+            activeWorkspaceId = workspaces[0].id;
+            const targetWS = workspaces.find((w) => w.id === activeWorkspaceId);
+            if (targetWS && targetWS.data) {
+              loadSerializedState(targetWS.data);
+            }
+          }
+          saveWorkspacesToLocalStorage();
+          renderWorkspaceList();
+          draw();
+        }
+      }
+
+      saveWorkspaceBtn.addEventListener("click", () => {
+        const name = newWorkspaceNameInput.value.trim();
+        if (!name) return;
+        
+        const newId = "ws-" + Date.now();
+        const currentState = serializeState();
+        
+        workspaces.push({
+          id: newId,
+          name: name,
+          data: currentState
+        });
+        
+        activeWorkspaceId = newId;
+        saveWorkspacesToLocalStorage();
+        newWorkspaceNameInput.value = "";
+        renderWorkspaceList();
+        draw();
+      });
+
+      workspacesBtn.addEventListener("click", () => {
+        workspaceModal.classList.add("show");
+        renderWorkspaceList();
+      });
+
+      closeWorkspaceBtn.addEventListener("click", () => {
+        workspaceModal.classList.remove("show");
+      });
+
+      workspaceModal.addEventListener("mousedown", (e) => {
+        if (e.target === workspaceModal) {
+          workspaceModal.classList.remove("show");
+        }
+      });
+
+      // Boot-up Load Logic
       window.addEventListener("load", () => {
         // Load Camera Setup First
         const savedCamera = localStorage.getItem("logicSimulatorCamera");
@@ -2490,9 +2753,17 @@
           }
         }
 
-        const saved = localStorage.getItem("logicSimulatorAutoSave");
-        if (saved) loadSerializedState(saved);
-        else draw();
+        // Initialize and load Workspaces
+        initWorkspaces();
+        
+        const currentWS = workspaces.find((w) => w.id === activeWorkspaceId);
+        if (currentWS && currentWS.data) {
+          loadSerializedState(currentWS.data);
+        } else {
+          const saved = localStorage.getItem("logicSimulatorAutoSave");
+          if (saved) loadSerializedState(saved);
+          else draw();
+        }
       });
 
       // --- End Core State Management ---
@@ -3007,7 +3278,7 @@
       });
 
       document.addEventListener("keydown", (e) => {
-        if (document.activeElement === labelEditor) return;
+        if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
 
         if (
           e.key.toLowerCase() === "h" &&
@@ -3038,6 +3309,7 @@
         }
 
         if (helpModal.classList.contains("show") && e.key !== "Escape") return;
+        if (workspaceModal.classList.contains("show") && e.key !== "Escape") return;
 
         if (e.key === "=" || e.key === "+") {
           e.preventDefault();
@@ -3156,6 +3428,10 @@
             toggleHelpMenu();
             return;
           }
+          if (workspaceModal.classList.contains("show")) {
+            workspaceModal.classList.remove("show");
+            return;
+          }
           selectedPin = null;
           selectedWire = null;
           selectedComponents = [];
@@ -3235,7 +3511,7 @@
         ) {
           labelEditor.blur();
         }
-        if (popupVisible || helpModal.classList.contains("show")) return;
+        if (popupVisible || helpModal.classList.contains("show") || workspaceModal.classList.contains("show")) return;
 
         historyTempState = serializeState();
 
@@ -3356,7 +3632,7 @@
       });
 
       canvas.addEventListener("mousemove", (e) => {
-        if (isDraggingMinimap || helpModal.classList.contains("show")) return;
+        if (isDraggingMinimap || helpModal.classList.contains("show") || workspaceModal.classList.contains("show")) return;
 
         const rect = canvas.getBoundingClientRect();
         const screenX = e.clientX - rect.left;
@@ -3691,7 +3967,7 @@
         (e) => {
           e.preventDefault();
           if (document.activeElement === labelEditor) labelEditor.blur();
-          if (helpModal.classList.contains("show")) return;
+          if (helpModal.classList.contains("show") || workspaceModal.classList.contains("show")) return;
           const rect = canvas.getBoundingClientRect();
           const mouseX = e.clientX - rect.left;
           const mouseY = e.clientY - rect.top;
@@ -3732,7 +4008,7 @@
       }
 
       minimapCanvas.addEventListener("mousedown", (e) => {
-        if (helpModal.classList.contains("show")) return;
+        if (helpModal.classList.contains("show") || workspaceModal.classList.contains("show")) return;
         isDraggingMinimap = true;
         updateCameraFromMinimap(e);
         e.stopPropagation();

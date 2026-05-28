@@ -103,6 +103,17 @@ menu interface.
     input field is active so users can still type spaces in labels.
 55. Help Menu Update: Added a new entry for the Space shortcut inside the
     interactive Keyboard Shortcuts help panel.
+56. Workspace features:
+   56.1.  Workspaces Manager Interface: Added a dedicated Workspaces button inside the
+      slide-down Hamburger Action Menu that opens a modal window.
+   56.2.  Local Storage Workspace Persistence: Create, load, and delete custom
+      workspaces seamlessly. The simulator dynamically tracks which workspace is
+      currently active.
+   56.3.  Workspace Auto-Saving: Making modifications on the canvas automatically
+      saves updates directly into the active workspace config.
+   56.4.  Interactive Modal Controls: Switch between multiple testbeds and projects
+      with a responsive active indicator, quick-load trigger, and clear safety
+      checks before workspace deletions.
 
 
 ## Improvement: 
