@@ -950,7 +950,7 @@
         </div>
         <div style="margin-bottom: 20px; display: flex; gap: 8px;">
           <input type="text" id="newWorkspaceName" placeholder="Workspace name..." style="flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--color-border-default); background: var(--color-editor-bg); color: var(--color-text-main); font-size: 14px;" />
-          <button id="saveWorkspaceBtn" style="background: var(--color-primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.1s;">Save Current</button>
+          <button id="saveWorkspaceBtn" style="background: var(--color-primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.1s;">Create</button>
         </div>
         <div id="workspaceList" style="display: flex; flex-direction: column; max-height: 300px; overflow-y: auto; border-top: 1px solid var(--color-border-subtle); padding-top: 12px;">
           <!-- Managed workspaces generated programmatically -->
@@ -2714,17 +2714,22 @@
         if (!name) return;
         
         const newId = "ws-" + Date.now();
-        const currentState = serializeState();
+        // Create a strictly empty workspace data state instead of inheriting current canvas state
+        const emptyState = JSON.stringify({ components: [], wires: [] });
         
         workspaces.push({
           id: newId,
           name: name,
-          data: currentState
+          data: emptyState
         });
         
         activeWorkspaceId = newId;
         saveWorkspacesToLocalStorage();
         newWorkspaceNameInput.value = "";
+        
+        // Load the clean empty state into the simulator canvas
+        loadSerializedState(emptyState);
+        
         renderWorkspaceList();
         draw();
       });
