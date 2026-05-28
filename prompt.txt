@@ -75,6 +75,11 @@ width of these custom pin names to prevent overlapping.
 47. An enhancement has been made to the manual wire system. Now, when dragging
 components, any manual waypoints on the connected wires will move proportionally
 to preserve the exact hand-routed layout and structure of your circuit design.
+48. The selected wire (along with its highlight glow and manual waypoints) is now
+drawn on top of other wires and logic components. Once deselected, it seamlessly
+returns to its default background z-index position. To avoid shadow rendering
+artifacts or trail blurring during zooming or panning, all canvas shadow
+properties are explicitly reset to a transparent state after drawing
 
 
 ## Improvement: 

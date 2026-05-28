@@ -1039,6 +1039,7 @@
               ctx.arc(px, py, PIN_RADIUS * 2.5, 0, Math.PI * 2);
               ctx.stroke();
               ctx.shadowBlur = 0;
+              ctx.shadowColor = "transparent";
             }
 
             ctx.fillStyle = "#007AFF";
@@ -1093,6 +1094,7 @@
               ctx.arc(px, py, PIN_RADIUS * 2.5, 0, Math.PI * 2);
               ctx.stroke();
               ctx.shadowBlur = 0;
+              ctx.shadowColor = "transparent";
             }
 
             ctx.fillStyle = "#FF9500";
@@ -1465,11 +1467,14 @@
         return { hit: false };
       }
 
-      function drawWires() {
+      function drawWires(onlySelected = false) {
         const scaledRadius = 8 * camera.zoom;
 
         wires.forEach((wire) => {
           const isWireSelected = selectedWire === wire;
+          if (onlySelected && !isWireSelected) return;
+          if (!onlySelected && isWireSelected) return;
+
           const isWireActive = wire.from.component.getOutputState(
             wire.from.pin,
           );
@@ -1493,6 +1498,7 @@
             ctx.shadowBlur = 20;
             drawPathWithRoundedCorners(ctx, screenPoints, scaledRadius);
             ctx.shadowBlur = 0;
+            ctx.shadowColor = "transparent";
           }
 
           ctx.strokeStyle = isWireSelected
@@ -1540,6 +1546,7 @@
                 ctx.stroke();
 
                 ctx.shadowBlur = 0;
+                ctx.shadowColor = "transparent";
               });
             }
           }
@@ -1738,8 +1745,8 @@
           .forEach((comp) => comp.draw());
         ctx.restore();
 
-        // 3. Wire Layer: Pathing
-        drawWires();
+        // 3. Wire Layer: Standard/Unselected Wires Background Pathing
+        drawWires(false);
 
         // 4. Logic & Label Layer
         ctx.save();
@@ -1774,6 +1781,11 @@
         }
 
         ctx.restore();
+
+        // Overlay Layer: Draw any selected wire on top of components and other wires
+        if (selectedWire) {
+          drawWires(true);
+        }
 
         // 5. Interaction Layer: Active dragging wire
         if (isDraggingPin && pinDragDidMove) {
