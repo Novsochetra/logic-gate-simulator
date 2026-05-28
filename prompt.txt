@@ -97,6 +97,12 @@ menu interface.
 53. Streamlined Bottom Navigation Bar: The floating component menu has been
     rebuilt with concise SVG icons and tooltips. The original hotkey badges
     remain correctly positioned at the top-right of each button.
+54. Play/Pause Shortcut: Pressing the Space bar now toggles the simulation
+    state. The event listener prevents default browser page scrolling when the
+    simulator has focus, and it is automatically disabled when the label editor
+    input field is active so users can still type spaces in labels.
+55. Help Menu Update: Added a new entry for the Space shortcut inside the
+    interactive Keyboard Shortcuts help panel.
 
 
 ## Improvement: 

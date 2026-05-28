@@ -637,7 +637,7 @@
     <input type="file" id="importInput" accept=".json" style="display: none" />
 
     <!-- Top Right Play/Pause Simulation Control -->
-    <button class="sim-control-btn stopped" id="toggleSimBtn" data-tooltip="Play Simulation" data-tooltip-pos="left">
+    <button class="sim-control-btn stopped" id="toggleSimBtn" data-tooltip="Play Simulation (Space)" data-tooltip-pos="left">
       <svg class="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
         <path d="M8 5v14l11-7z"/>
       </svg>
@@ -749,6 +749,10 @@
           <div class="help-row">
             <span class="help-key">H</span
             ><span class="help-desc">Show / Hide Help Menu</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">Space</span
+            ><span class="help-desc">Play / Pause Simulation</span>
           </div>
           <div class="help-row">
             <span class="help-key">1 - 6</span
@@ -1071,14 +1075,14 @@
             ctx.textBaseline = "top";
             ctx.fillText(this.label, this.x + 16, this.y + 16);
 
-            // Solid Resize Handle: Using solid hex to ensure no transparency on the corner
+            // Solid Resize Handle
             ctx.save();
             ctx.beginPath();
             ctx.roundRect(this.x, this.y, this.width, this.height, radius);
             ctx.clip(); 
 
             const handleColor = isSelected ? "#007AFF" : "#444444";
-            ctx.fillStyle = handleColor; // SOLID HEX
+            ctx.fillStyle = handleColor; 
             
             const handleSize = 22;
             ctx.beginPath();
@@ -2431,13 +2435,13 @@
         if (isSimulating) {
           simInterval = setInterval(simulationTick, 1);
           toggleSimBtn.classList.remove("stopped");
-          toggleSimBtn.setAttribute("data-tooltip", "Stop Simulation");
+          toggleSimBtn.setAttribute("data-tooltip", "Stop Simulation (Space)");
           simulationTick();
         } else {
           clearInterval(simInterval);
           simInterval = null;
           toggleSimBtn.classList.add("stopped");
-          toggleSimBtn.setAttribute("data-tooltip", "Play Simulation");
+          toggleSimBtn.setAttribute("data-tooltip", "Play Simulation (Space)");
         }
         draw();
         toggleSimBtn.blur();
@@ -2884,6 +2888,13 @@
         ) {
           e.preventDefault();
           toggleHelpMenu();
+          return;
+        }
+
+        // Space to Play / Pause Simulation
+        if ((e.key === " " || e.code === "Space") && !e.metaKey && !e.ctrlKey) {
+          e.preventDefault();
+          toggleSimBtn.click();
           return;
         }
 
