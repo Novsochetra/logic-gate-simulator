@@ -80,6 +80,11 @@ drawn on top of other wires and logic components. Once deselected, it seamlessly
 returns to its default background z-index position. To avoid shadow rendering
 artifacts or trail blurring during zooming or panning, all canvas shadow
 properties are explicitly reset to a transparent state after drawing
+49. implemented keyboard shortcuts for zooming in and out using the + / = and
+- keys (including their Ctrl/Cmd combinations). This smoothly scales the view
+centered on your screen at a constant, controlled speed, preventing default
+browser page zoom interference. Also added this new shortcut entry to the help
+menu interface.
 
 
 ## Improvement: 

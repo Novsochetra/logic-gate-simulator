@@ -547,6 +547,10 @@
             ><span class="help-desc">Reset View</span>
           </div>
           <div class="help-row">
+            <span class="help-key">+ / -</span
+            ><span class="help-desc">Zoom In / Zoom Out</span>
+          </div>
+          <div class="help-row">
             <span class="help-key">Escape</span
             ><span class="help-desc">Deselect / Cancel</span>
           </div>
@@ -1303,6 +1307,24 @@
         };
       }
 
+      function zoomAtCenter(zoomFactor) {
+        const rect = canvas.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const worldBefore = screenToWorld(centerX, centerY);
+
+        camera.zoom *= zoomFactor;
+        camera.zoom = Math.max(0.1, Math.min(5, camera.zoom));
+        const worldAfter = screenToWorld(centerX, centerY);
+
+        camera.x += (worldAfter.x - worldBefore.x) * camera.zoom;
+        camera.y += (worldAfter.y - worldBefore.y) * camera.zoom;
+
+        zoomIndicator.textContent = Math.round(camera.zoom * 100) + "%";
+        saveCameraState();
+        draw();
+      }
+
       function drawGrid() {
         const canvasWidth = canvas.width / dpr;
         const canvasHeight = canvas.height / dpr;
@@ -1416,6 +1438,7 @@
         ctx.stroke();
       }
 
+      // Wire intersection helper
       function distancePointToSegment(px, py, x1, y1, x2, y2) {
         const A = px - x1;
         const B = py - y1;
@@ -1745,10 +1768,10 @@
           .forEach((comp) => comp.draw());
         ctx.restore();
 
-        // 3. Wire Layer: Standard/Unselected Wires Background Pathing
+        // Wire Layer: Standard/Unselected Wires Background Pathing
         drawWires(false);
 
-        // 4. Logic & Label Layer
+        // Logic & Label Layer
         ctx.save();
         ctx.translate(camera.x, camera.y);
         ctx.scale(camera.zoom, camera.zoom);
@@ -1787,7 +1810,7 @@
           drawWires(true);
         }
 
-        // 5. Interaction Layer: Active dragging wire
+        // Interaction Layer: Active dragging wire
         if (isDraggingPin && pinDragDidMove) {
           const scaledRadius = 8 * camera.zoom;
           const fromWorldX = isDraggingPin.component.x + isDraggingPin.pin.x;
@@ -2606,6 +2629,18 @@
         }
 
         if (helpModal.classList.contains("show") && e.key !== "Escape") return;
+
+        if (e.key === "=" || e.key === "+") {
+          e.preventDefault();
+          zoomAtCenter(1.05);
+          return;
+        }
+
+        if (e.key === "-") {
+          e.preventDefault();
+          zoomAtCenter(1 / 1.05);
+          return;
+        }
 
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") {
           e.preventDefault();
