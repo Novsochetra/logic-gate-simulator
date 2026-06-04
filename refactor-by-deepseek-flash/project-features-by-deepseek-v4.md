@@ -107,8 +107,8 @@
 80. **Minimap Responsive** — Smaller on mobile (110x82px).
 
 ## Workspaces
-81. **Workspace Manager Modal** — Button in hamburger menu opens workspace management window.
-82. **Create Workspace** — Name input + Create button; creates empty workspace and switches to it.
+81. **Workspace Manager Modal** — Button in hamburger menu opens workspace management window; Escape closes it (even when focused on the name input).
+82. **Create Workspace** — Name input + Create button; Enter key also submits; creates empty workspace and switches to it.
 83. **Load Workspace** — Switch between workspaces; loads saved circuit data.
 84. **Delete Workspace** — Remove workspace with confirmation dialog; auto-switches to first remaining workspace.
 85. **Active Indicator** — Current workspace shown with "Active Workspace" status and blue highlight.

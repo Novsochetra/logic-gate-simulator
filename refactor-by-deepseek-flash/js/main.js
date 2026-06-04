@@ -418,6 +418,11 @@ canvas.addEventListener("dblclick", e => {
 
 // ==================== KEYBOARD ====================
 document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    if (helpModal.classList.contains("show")) { helpModal.classList.remove("show"); e.preventDefault(); return; }
+    if (workspaceModal.classList.contains("show")) { workspaceModal.classList.remove("show"); e.preventDefault(); return; }
+  }
+
   if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
 
   if (e.key.toLowerCase() === "h" && !e.metaKey && !e.ctrlKey && !e.shiftKey) { e.preventDefault(); helpModal.classList.toggle("show"); return; }
@@ -457,8 +462,6 @@ document.addEventListener("keydown", e => {
   else if (e.key === "5") autoSpawn("label_box");
   else if (e.key === "6") autoSpawn("label");
   else if (e.key === "Escape") {
-    if (helpModal.classList.contains("show")) { helpModal.classList.remove("show"); return; }
-    if (workspaceModal.classList.contains("show")) { workspaceModal.classList.remove("show"); return; }
     setSelectedPin(null); setSelectedWire(null); setSelectedComponents([]);
     setDraggingPin(null); setHoveredPin(null); setSelectedWaypoint(null);
     draw();
@@ -785,7 +788,7 @@ document.getElementById("workspacesBtn")?.addEventListener("click", () => { work
 closeWorkspaceBtn?.addEventListener("click", () => workspaceModal.classList.remove("show"));
 workspaceModal?.addEventListener("mousedown", e => { if (e.target === workspaceModal) workspaceModal.classList.remove("show"); });
 
-document.getElementById("saveWorkspaceBtn")?.addEventListener("click", () => {
+function createWorkspace() {
   const input = document.getElementById("newWorkspaceName");
   const name = input.value.trim();
   if (!name) return;
@@ -798,6 +801,11 @@ document.getElementById("saveWorkspaceBtn")?.addEventListener("click", () => {
   loadSerializedState(empty);
   renderWorkspaceList();
   draw();
+}
+
+document.getElementById("saveWorkspaceBtn")?.addEventListener("click", createWorkspace);
+document.getElementById("newWorkspaceName")?.addEventListener("keydown", e => {
+  if (e.key === "Enter") createWorkspace();
 });
 
 // ==================== MINIMAP EVENTS ====================
