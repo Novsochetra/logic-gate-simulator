@@ -1,0 +1,91 @@
+// Shared application state
+export const camera = { x: 0, y: 0, zoom: 1 };
+export let components = [];
+export let wires = [];
+export let nextId = 1;
+
+export function setComponents(arr) { components = arr; }
+export function setWires(arr) { wires = arr; }
+export function setNextId(id) { nextId = id; }
+export function allocateNextId() { return nextId++; }
+
+// Interaction state
+export let isSelectMode = false;
+export let isDraggingCanvas = false;
+export let isDraggingComponent = null;
+export let isResizingComponent = null;
+export let resizeStart = { w: 0, h: 0 };
+export let isDraggingPin = null;
+export let dragStart = { x: 0, y: 0 };
+export let mousePos = { x: 0, y: 0 };
+export let popupVisible = false;
+export let popupSelectedIndex = 0;
+export let popupSourcePin = null;
+export let hoveredPin = null;
+export let selectedPin = null;
+export let selectedWire = null;
+export let selectedWaypoint = null;
+export let selectedComponents = [];
+export let editingComponent = null;
+export let clipboard = null;
+export let pasteOffset = 30;
+export let dragStartMousePos = { x: 0, y: 0 };
+export let pinDragDidMove = false;
+export let dragStartWorld = { x: 0, y: 0 };
+export let selectedComponentsInitPos = [];
+export let componentDragDidMove = false;
+export let isSelectingBox = false;
+export let selectionBoxStart = { x: 0, y: 0 };
+export let selectionBoxEnd = { x: 0, y: 0 };
+export let isDraggingWaypoint = null;
+export let potentialWaypoint = null;
+export let affectedWiresInitWaypoints = [];
+export let undoStack = [];
+export let redoStack = [];
+export let historyTempState = null;
+export let isSimulating = false;
+export let simInterval = null;
+export let isDraggingMinimap = false;
+
+// Workspace state
+export let workspaces = [];
+export let activeWorkspaceId = "default";
+
+export function setSelectMode(v) { isSelectMode = v; }
+export function setDraggingCanvas(v) { isDraggingCanvas = v; }
+export function setDraggingComponent(v) { isDraggingComponent = v; }
+export function setResizingComponent(v) { isResizingComponent = v; }
+export function setResizeStart(v) { resizeStart = v; }
+export function setDraggingPin(v) { isDraggingPin = v; }
+export function setDragStart(v) { dragStart = v; }
+export function setMousePos(v) { mousePos = v; }
+export function setPopupVisible(v) { popupVisible = v; }
+export function setPopupSelectedIndex(v) { popupSelectedIndex = v; }
+export function setPopupSourcePin(v) { popupSourcePin = v; }
+export function setHoveredPin(v) { hoveredPin = v; }
+export function setSelectedPin(v) { selectedPin = v; }
+export function setSelectedWire(v) { selectedWire = v; }
+export function setSelectedWaypoint(v) { selectedWaypoint = v; }
+export function setSelectedComponents(v) { selectedComponents = v; }
+export function setEditingComponent(v) { editingComponent = v; }
+export function setClipboard(v) { clipboard = v; }
+export function setPasteOffset(v) { pasteOffset = v; }
+export function setDragStartMousePos(v) { dragStartMousePos = v; }
+export function setPinDragDidMove(v) { pinDragDidMove = v; }
+export function setDragStartWorld(v) { dragStartWorld = v; }
+export function setSelectedComponentsInitPos(v) { selectedComponentsInitPos = v; }
+export function setComponentDragDidMove(v) { componentDragDidMove = v; }
+export function setSelectingBox(v) { isSelectingBox = v; }
+export function setSelectionBoxStart(v) { selectionBoxStart = v; }
+export function setSelectionBoxEnd(v) { selectionBoxEnd = v; }
+export function setDraggingWaypoint(v) { isDraggingWaypoint = v; }
+export function setPotentialWaypoint(v) { potentialWaypoint = v; }
+export function setAffectedWiresInitWaypoints(v) { affectedWiresInitWaypoints = v; }
+export function setUndoStack(v) { undoStack = v; }
+export function setRedoStack(v) { redoStack = v; }
+export function setHistoryTempState(v) { historyTempState = v; }
+export function setSimulating(v) { isSimulating = v; }
+export function setSimInterval(v) { simInterval = v; }
+export function setDraggingMinimap(v) { isDraggingMinimap = v; }
+export function setWorkspaces(v) { workspaces = v; }
+export function setActiveWorkspaceId(v) { activeWorkspaceId = v; }

@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Logic Gate Simulator</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <canvas id="minimap"></canvas>
+
+    <!-- Top Left Hamburger Menu -->
+    <div class="hamburger-menu">
+      <button class="menu-btn" id="menuBtn" data-tooltip="Menu" data-tooltip-pos="right">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div class="menu-dropdown" id="menuDropdown">
+        <button class="menu-item" id="workspacesBtn">📂 Workspaces</button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" id="createIcBtn">📦 Create IC <span class="menu-shortcut">G</span></button>
+        <button class="menu-item" id="unpackIcBtn">💥 Unpack IC <span class="menu-shortcut">Shift+G</span></button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" id="copyBtn">📄 Copy <span class="menu-shortcut">Ctrl+C</span></button>
+        <button class="menu-item" id="pasteBtn">📋 Paste <span class="menu-shortcut">Ctrl+V</span></button>
+        <button class="menu-item" id="deleteBtn">🗑 Delete <span class="menu-shortcut">Del</span></button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" id="exportBtn">📤 Export</button>
+        <button class="menu-item" id="importBtn">📥 Import</button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" id="helpBtn">❓ Help <span class="menu-shortcut">H</span></button>
+      </div>
+    </div>
+
+    <!-- Hidden File Import Element -->
+    <input type="file" id="importInput" accept=".json" style="display: none" />
+
+    <!-- Top Right Play/Pause Simulation Control -->
+    <button class="sim-control-btn stopped" id="toggleSimBtn" data-tooltip="Play Simulation (Space)" data-tooltip-pos="left">
+      <svg class="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      <svg class="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+      </svg>
+    </button>
+
+    <!-- Bottom Left Zoom Control Group -->
+    <div class="zoom-group">
+      <button id="zoomOutBtn" class="zoom-btn" data-tooltip="Zoom Out" data-tooltip-pos="top">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+      <div class="zoom-indicator" id="zoomIndicator" data-tooltip="Reset View" data-tooltip-pos="top">100%</div>
+      <button id="zoomInBtn" class="zoom-btn" data-tooltip="Zoom In" data-tooltip-pos="top">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Floating Bottom Navigation Menu -->
+    <div class="nav-bar">
+      <button class="nav-item active" id="modePan" data-tooltip="Pan Mode" data-tooltip-pos="top">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5m0-5V5a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6m0-6V7a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v9c0 4 3 7 7 7s7-3 7-7v-5a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2"/>
+        </svg>
+        <span class="shortcut">V</span>
+      </button>
+      <button class="nav-item" id="modeSelect" data-tooltip="Select Mode" data-tooltip-pos="top">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 3"/>
+          <path d="M10 10l4 4m0 0l-1.5-4M14 14l-4-1.5"/>
+        </svg>
+        <span class="shortcut">S</span>
+      </button>
+      <div class="nav-divider"></div>
+      <button class="nav-item" data-type="input" data-tooltip="Input Toggle" data-tooltip-pos="top">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="6" width="18" height="12" rx="6"/>
+          <circle cx="9" cy="12" r="3" fill="currentColor"/>
+        </svg>
+        <span class="shortcut">1</span>
+      </button>
+      <button class="nav-item" data-type="output" data-tooltip="Output LED" data-tooltip-pos="top">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="5" y="5" width="14" height="14" rx="3"/>
+        </svg>
+        <span class="shortcut">2</span>
+      </button>
+      <button class="nav-item" data-type="gate" data-tooltip="AND Gate" data-tooltip-pos="top">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 4h6a8 8 0 0 1 8 8v0a8 8 0 0 1-8 8H6V4z"/>
+          <line x1="2" y1="8" x2="6" y2="8"/>
+          <line x1="2" y1="16" x2="6" y2="16"/>
+          <line x1="20" y1="12" x2="23" y2="12"/>
+        </svg>
+        <span class="shortcut">3</span>
+      </button>
+      <button class="nav-item" data-type="not_gate" data-tooltip="NOT Gate" data-tooltip-pos="top">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="6,4 16,12 6,20"/>
+          <circle cx="18" cy="12" r="2"/>
+          <line x1="2" y1="12" x2="6" y2="12"/>
+        </svg>
+        <span class="shortcut">4</span>
+      </button>
+      <button class="nav-item" data-type="label_box" data-tooltip="Label Box" data-tooltip-pos="top">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+          <line x1="4" y1="9" x2="20" y2="9"/>
+          <path d="M9 14h6"/>
+        </svg>
+        <span class="shortcut">5</span>
+      </button>
+      <button class="nav-item" data-type="label" data-tooltip="Overlay Label" data-tooltip-pos="top">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4,7 4,4 20,4 20,7"/>
+          <line x1="12" y1="4" x2="12" y2="20"/>
+          <line x1="9" y1="20" x2="15" y2="20"/>
+        </svg>
+        <span class="shortcut">6</span>
+      </button>
+    </div>
+
+    <!-- Right-click or Connection Release Dropdown Panel -->
+    <div class="component-popup" id="componentPopup">
+      <div class="popup-item" data-type="input">Input</div>
+      <div class="popup-item" data-type="output">Output</div>
+      <div class="popup-item" data-type="gate">AND Gate</div>
+      <div class="popup-item" data-type="not_gate">NOT Gate</div>
+      <div class="popup-item" data-type="label_box">Label Box</div>
+      <div class="popup-item" data-type="label">Label</div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+      <div class="help-content">
+        <div class="help-header">
+          <h2>Keyboard Shortcuts</h2>
+          <button id="closeHelpBtn">&times;</button>
+        </div>
+        <div class="help-grid">
+          <div class="help-row"><span class="help-key">H</span><span class="help-desc">Show / Hide Help Menu</span></div>
+          <div class="help-row"><span class="help-key">Space</span><span class="help-desc">Play / Pause Simulation</span></div>
+          <div class="help-row"><span class="help-key">1 - 6</span><span class="help-desc">Add Component (6 for Overlay Label)</span></div>
+          <div class="help-row"><span class="help-key">V</span><span class="help-desc">Pan Mode</span></div>
+          <div class="help-row"><span class="help-key">S</span><span class="help-desc">Select Mode</span></div>
+          <div class="help-row"><span class="help-key">G</span><span class="help-desc">Create Custom IC from Selection</span></div>
+          <div class="help-row"><span class="help-key">Shift + G</span><span class="help-desc">Unpack / Explode Selected IC</span></div>
+          <div class="help-row"><span class="help-key">Cmd/Ctrl + Z</span><span class="help-desc">Undo</span></div>
+          <div class="help-row"><span class="help-key">Cmd/Ctrl + Y / Shift+Z</span><span class="help-desc">Redo</span></div>
+          <div class="help-row"><span class="help-key">Cmd/Ctrl + C</span><span class="help-desc">Copy Selected</span></div>
+          <div class="help-row"><span class="help-key">Cmd/Ctrl + Shift + C</span><span class="help-desc">Copy IC Internals</span></div>
+          <div class="help-row"><span class="help-key">Cmd/Ctrl + V</span><span class="help-desc">Paste</span></div>
+          <div class="help-row"><span class="help-key">Cmd/Ctrl + A</span><span class="help-desc">Select All</span></div>
+          <div class="help-row"><span class="help-key">Delete / Backspace</span><span class="help-desc">Delete Selected</span></div>
+          <div class="help-row"><span class="help-key">Cmd/Ctrl + 0</span><span class="help-desc">Reset View</span></div>
+          <div class="help-row"><span class="help-key">+ / -</span><span class="help-desc">Zoom In / Zoom Out</span></div>
+          <div class="help-row"><span class="help-key">Escape</span><span class="help-desc">Deselect / Cancel</span></div>
+          <div class="help-row"><span class="help-key">Double Click / Tap</span><span class="help-desc">Reset Wire / Edit Label</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workspace Modal -->
+    <div class="modal-overlay" id="workspaceModal">
+      <div class="help-content" style="width: 450px;">
+        <div class="help-header">
+          <h2>Manage Workspaces</h2>
+          <button id="closeWorkspaceBtn">&times;</button>
+        </div>
+        <div style="margin-bottom: 20px; display: flex; gap: 8px;">
+          <input type="text" id="newWorkspaceName" placeholder="Workspace name..." style="flex:1; padding:10px 14px; border-radius:8px; border:1px solid var(--color-border-default); background:var(--color-editor-bg); color:var(--color-text-main); font-size:14px;" />
+          <button id="saveWorkspaceBtn" style="background:var(--color-primary); color:white; border:none; padding:10px 16px; border-radius:8px; font-weight:500; cursor:pointer;">Create</button>
+        </div>
+        <div id="workspaceList" style="display:flex; flex-direction:column; max-height:300px; overflow-y:auto; border-top:1px solid var(--color-border-subtle); padding-top:12px;"></div>
+      </div>
+    </div>
+
+    <input type="text" id="labelEditor" class="label-editor" autocomplete="off" spellcheck="false" />
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
