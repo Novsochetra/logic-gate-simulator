@@ -142,6 +142,27 @@
 107. **Glassmorphism UI** — Backdrop blur effects on panels, nav bar, menu, and modals.
 108. **Responsive Media Queries** — Mobile breakpoint at 768px with adjusted sizes and hidden elements.
 
+## Architecture
+118. **Modular ES Module Structure** — `main.js` acts as a lightweight orchestrator (~76 lines) that imports and initializes focused sub-modules:
+    - `state.js` — single source of truth for all shared application and interaction state with getter/setter pairs.
+    - `dom.js` — centralized DOM element references used across the app.
+    - `constants.js` — design tokens and GRID_SIZE.
+    - `canvas.js` — canvas setup, DPR handling, and context management.
+    - `camera.js` — zoom, pan, and camera persistence utilities.
+    - `utils.js` — coordinate transforms, grid snapping, and geometry helpers.
+    - `grid.js` — dynamic background grid rendering.
+    - `render.js` — main draw loop delegating to component, wire, and minimap renderers.
+    - `Component.js` — component class definitions and canvas draw methods.
+    - `wiring.js` — orthogonal path routing, wire hit detection, and waypoint helpers.
+    - `serialization.js` — circuit JSON serialize/parse/load with Custom IC support.
+    - `history.js` — undo/redo stack management and localStorage persistence.
+    - `simulation.js` — play/pause simulation loop and tick evaluation.
+    - `actions.js` — high-level user actions: spawn, delete, copy, paste, label editing, IC create/unpack, import/export.
+    - `ui/theme.js`, `ui/workspace.js`, `ui/popup.js`, `ui/menu.js` — UI initialization for respective modals, dropdowns, and nav bars.
+    - `input/mouse.js`, `input/keyboard.js`, `input/touch.js`, `input/minimap.js` — raw input event handlers isolated by device/input surface.
+119. **No Local State Shadowing** — All mutable state (workspaces, clipboard, active workspace ID, editing component) lives in `state.js` and is accessed via exported live bindings and setter functions; modules never maintain private shadow copies.
+120. **Single-Responsibility Modules** — Each module has one clear reason to change (e.g., `input/keyboard.js` only handles keydown events; `serialization.js` only handles data formats).
+
 ## Miscellaneous
 109. **Spawn Component at Center** — Pressing 1-6 or clicking nav items spawns component at screen center.
 110. **Auto-Offset on Spawn Collision** — If spawn position overlaps existing component, auto-offsets to avoid stacking.
