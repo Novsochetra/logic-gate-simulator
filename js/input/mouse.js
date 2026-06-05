@@ -4,7 +4,7 @@ import {
   isResizingComponent, isSelectingBox, isRouting, routingSourcePin, routingWaypoints,
   potentialWaypoint, dragStart, dragStartWorld, dragStartMousePos,
   selectionBoxStart, selectionBoxEnd, historyTempState, componentDragDidMove, pinDragDidMove,
-  selectedComponentsInitPos, affectedWiresInitWaypoints,
+  selectedComponentsInitPos, affectedWiresInitWaypoints, isSimulating,
   undoStack, redoStack,
   setHistoryTempState, setMousePos, setSelectedWaypoint, setDraggingWaypoint,
   setDraggingPin, setDragStart, setDragStartWorld, setDragStartMousePos,
