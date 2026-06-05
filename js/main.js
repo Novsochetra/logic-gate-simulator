@@ -299,14 +299,15 @@ canvas.addEventListener("mousedown", e => {
   for (let ww of wires) {
     const hi = isPointNearWire(w.x, w.y, ww);
     if (hi.hit) {
-      if (ww.waypoints?.length) {
+      if (selectedWire === ww && ww.waypoints?.length) {
+        // Already selected wire with waypoints → drag whole wire
         setDraggingWire(ww);
-        setSelectedWire(ww);
         setWireDragInitWaypoints(ww.waypoints.map(wp => ({ x: wp.x, y: wp.y })));
         setWireDragInitMouseWorld({ x: w.x, y: w.y });
         setDragStartMousePos({ x: sx, y: sy });
         setSelectedPin(null); setSelectedComponents([]);
       } else {
+        // Click on wire segment → create new waypoint
         setSelectedWire(ww); setSelectedPin(null); setSelectedComponents([]); setDraggingPin(null);
         setPotentialWaypoint({ wire: ww, segmentIndex: hi.segmentIndex, startX: w.x, startY: w.y });
       }
