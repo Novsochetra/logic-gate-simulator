@@ -116,7 +116,7 @@ export function draw() {
   }
   ctx.restore();
 
-  if (selectedWire) drawWires(ctx, [selectedWire], selectedWire, selectedWaypoint, false);
+  if (selectedWire) drawWires(ctx, [selectedWire], selectedWire, selectedWaypoint, true);
 
   if (isDraggingPin && pinDragDidMove) {
     drawDraggingWire(ctx, isDraggingPin.component, isDraggingPin.pin, isDraggingPin.type,
