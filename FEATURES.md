@@ -73,15 +73,15 @@
 58. **Pin Name Labels on Custom IC** — Input/output names are inherited from original components and rendered as pin labels on the IC boundary.
 
 ## Undo / Redo & Persistence
-59. **Undo (Cmd/Ctrl + Z)** — Reverts last action; stack up to 50 states.
-60. **Redo (Cmd/Ctrl + Y / Shift+Z)** — Restores previously undone action.
+59. **Undo (Cmd/Ctrl + Z)** — Reverts last action; stack up to 50 states. Also available via bottom-right undo button.
+60. **Redo (Cmd/Ctrl + Y / Shift+Z)** — Restores previously undone action. Also available via bottom-right redo button.
 61. **Auto-Save to localStorage** — Every change automatically saves to `logicSimulatorAutoSave` in browser localStorage.
 62. **Auto-Load on Refresh** — Circuit loads automatically from localStorage on page load.
 
 ## Copy / Paste
-63. **Copy Selected (Cmd/Ctrl + C)** — Copies selected components and their internal wires to clipboard.
+63. **Copy Selected (Cmd/Ctrl + C)** — Copies selected components and their internal wires to clipboard. Also available via selection toolbar.
 64. **Copy IC Internals (Cmd/Ctrl + Shift + C)** — Copies internal components/wires of a selected Custom IC.
-65. **Paste (Cmd/Ctrl + V)** — Pastes copied components with incremental offset; preserves waypoints.
+65. **Paste (Cmd/Ctrl + V)** — Pastes copied components with incremental offset; preserves waypoints. Also available via selection toolbar.
 66. **Clipboard Persistence** — Clipboard saved to `localStorage` for cross-session and cross-workspace pasting.
 67. **Cross-Workspace Paste** — Copy from one workspace, switch workspaces, paste into another.
 
@@ -96,7 +96,7 @@
 
 ## Hamburger Action Menu
 73. **Top-Left Hamburger Menu** — Contains all action buttons organized with dividers and keyboard shortcut hints.
-74. **Menu Items** — Workspaces, Create IC (G), Unpack IC (Shift+G), Copy (Ctrl+C), Paste (Ctrl+V), Delete (Del), Export, Import, Theme, Help (H).
+74. **Menu Items** — Workspaces, Create IC (G), Unpack IC (Shift+G), Select All (Ctrl+A), Copy (Ctrl+C), Paste (Ctrl+V), Delete (Del), Copy IC Internals (Ctrl+Shift+C), Export, Import, Theme, Help (H).
 75. **Click-Outside-to-Close** — Clicking outside the menu closes it.
 76. **Auto-Close on Item Click** — Selecting any menu item closes the dropdown.
 
@@ -130,6 +130,8 @@
 97. **Minimap Mobile Size** — Smaller minimap on mobile viewports.
 98. **Tooltips Disabled on Mobile** — CSS tooltips hidden (`display: none`) on mobile to avoid touch clutter.
 99. **Zoom Group Mobile Position** — Adjusted positioning for bottom controls on mobile.
+114. **Undo/Redo Buttons** — Bottom-right glass panel with undo/redo icons; disabled when no history available.
+115. **Selection Toolbar** — Top-center glass panel (Delete, Copy, Paste) appears only when components/wires/pins are selected; synced to selection state.
 
 ## Theming & Visual Polish
 100. **CSS Custom Properties (Multi-Theme)** — Comprehensive design token system (`--color-*` CSS variables) with 5 theme variants controlled by `data-theme` attribute on `<html>`.
@@ -158,7 +160,7 @@
     - `history.js` — undo/redo stack management and localStorage persistence.
     - `simulation.js` — play/pause simulation loop and tick evaluation.
     - `actions.js` — high-level user actions: spawn, delete, copy, paste, label editing, IC create/unpack, import/export.
-    - `ui/theme.js`, `ui/workspace.js`, `ui/popup.js`, `ui/menu.js` — UI initialization for respective modals, dropdowns, and nav bars.
+    - `ui/theme.js`, `ui/workspace.js`, `ui/popup.js`, `ui/menu.js`, `ui/toolbar.js` — UI initialization for respective modals, dropdowns, nav bars, and selection toolbar.
     - `input/mouse.js`, `input/keyboard.js`, `input/touch.js`, `input/minimap.js`, `input/zoom.js` — raw input event handlers isolated by device/input surface.
 119. **No Local State Shadowing** — All mutable state (workspaces, clipboard, active workspace ID, editing component) lives in `state.js` and is accessed via exported live bindings and setter functions; modules never maintain private shadow copies.
 120. **Single-Responsibility Modules** — Each module has one clear reason to change (e.g., `input/keyboard.js` only handles keydown events; `serialization.js` only handles data formats).
