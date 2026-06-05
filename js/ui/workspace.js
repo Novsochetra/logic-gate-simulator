@@ -1,7 +1,7 @@
 import { workspaces, activeWorkspaceId, setWorkspaces, setActiveWorkspaceId } from "../state.js";
 import { workspaceModal, workspacesBtn, closeWorkspaceBtn } from "../dom.js";
 import { saveWorkspaceList } from "../history.js";
-import { loadSerializedState, serializeState } from "../serialization.js";
+import { loadSerializedState, loadFromLocalStorage, serializeState } from "../serialization.js";
 import { createWorkspace } from "../actions.js";
 import { draw } from "../render.js";
 
@@ -62,6 +62,15 @@ export function renderWorkspaceList() {
     item.appendChild(ac);
     list.appendChild(item);
   });
+}
+
+export function loadInitialCircuit() {
+  const currentWS = workspaces.find(w => w.id === activeWorkspaceId);
+  if (currentWS?.data && currentWS.data !== "null") {
+    loadSerializedState(currentWS.data);
+  } else {
+    loadFromLocalStorage();
+  }
 }
 
 export function setupWorkspaceUI() {

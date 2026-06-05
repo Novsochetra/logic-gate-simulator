@@ -5,6 +5,10 @@ export const PIN_RADIUS = 6;
 export const COMPONENT_WIDTH = 90;
 export const COMPONENT_HEIGHT = 60;
 
+export const ZOOM_MIN = 0.1;
+export const ZOOM_MAX = 5;
+export const ZOOM_FACTOR = 1.1;
+
 const THEMES = {
   dark: {
     gridLine: "rgba(255, 255, 255, 0.05)",
