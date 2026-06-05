@@ -8,7 +8,8 @@ import {
   dragStart, dragStartWorld, dragStartMousePos, selectedComponentsInitPos,
   componentDragDidMove, affectedWiresInitWaypoints, resizeStart, potentialWaypoint,
   selectionBoxStart, selectionBoxEnd, historyTempState, mousePos, hoveredPin,
-  undoStack, redoStack,
+  undoStack, redoStack, isRouting, routingSourcePin, routingWaypoints,
+  isDraggingWire, wireDragInitWaypoints, wireDragInitMouseWorld,
   setSelectMode, setDraggingCanvas, setDraggingComponent, setDraggingPin,
   setDraggingWaypoint, setDragStart, setMousePos, setPinDragDidMove,
   setSelectedComponents, setSelectedPin, setSelectedWire, setHoveredPin, setSimulating,
@@ -17,6 +18,8 @@ import {
   setComponentDragDidMove, setSelectedComponentsInitPos, setAffectedWiresInitWaypoints,
   setHistoryTempState, setPopupVisible, setPopupSourcePin, setPopupSelectedIndex,
   setSelectedWaypoint, setComponents, setWires, setNextId, allocateNextId,
+  setIsRouting, setRoutingSourcePin, setRoutingWaypoints,
+  setDraggingWire, setWireDragInitWaypoints, setWireDragInitMouseWorld,
 } from "./state.js";
 import { screenToWorld, snapToGrid, installRoundRect } from "./utils.js";
 import { setupCanvas, getMainCtx, getDpr } from "./canvas.js";
@@ -136,6 +139,8 @@ function loadSerializedState(jsonStr) {
     setSelectedPin(null);
     setSelectedWire(null);
     setSelectedWaypoint(null);
+    setIsRouting(false); setRoutingSourcePin(null); setRoutingWaypoints([]);
+    setDraggingWire(null);
     draw();
     return true;
   } catch (e) { console.error(e); return false; }
@@ -242,6 +247,36 @@ canvas.addEventListener("mousedown", e => {
   setMousePos({ x: sx, y: sy });
   setSelectedWaypoint(null);
 
+  // Routing mode: click to place waypoint or complete wire
+  if (isRouting) {
+    let hitPin = null;
+    for (let c of [...components].reverse()) {
+      const pi = c.getPinAt(w.x, w.y);
+      if (pi) { hitPin = pi; break; }
+    }
+    if (hitPin && hitPin.type !== routingSourcePin.type) {
+      const fp = routingSourcePin.type === "output" ? routingSourcePin : hitPin;
+      const top = routingSourcePin.type === "input" ? routingSourcePin : hitPin;
+      pushHistory();
+      if (!wireExists(wires, fp, top)) {
+        const nw = { from: fp, to: top };
+        if (routingWaypoints.length > 0) nw.waypoints = [...routingWaypoints];
+        wires.push(nw);
+        top.pin.connections.push(fp.component);
+        if (isSimulating) simTick();
+      }
+      setIsRouting(false); setRoutingSourcePin(null); setRoutingWaypoints([]);
+      draw(); return;
+    }
+    if (hitPin) {
+      setIsRouting(false); setRoutingSourcePin(null); setRoutingWaypoints([]);
+      draw(); return;
+    }
+    const nwp = [...routingWaypoints, { x: snapToGrid(w.x), y: snapToGrid(w.y) }];
+    setRoutingWaypoints(nwp);
+    draw(); return;
+  }
+
   // Waypoint
   if (selectedWire?.waypoints) {
     for (let i = 0; i < selectedWire.waypoints.length; i++) {
@@ -263,7 +298,20 @@ canvas.addEventListener("mousedown", e => {
   // Wire
   for (let ww of wires) {
     const hi = isPointNearWire(w.x, w.y, ww);
-    if (hi.hit) { setSelectedWire(ww); setSelectedPin(null); setSelectedComponents([]); setDraggingPin(null); setPotentialWaypoint({ wire: ww, segmentIndex: hi.segmentIndex, startX: w.x, startY: w.y }); draw(); return; }
+    if (hi.hit) {
+      if (ww.waypoints?.length) {
+        setDraggingWire(ww);
+        setSelectedWire(ww);
+        setWireDragInitWaypoints(ww.waypoints.map(wp => ({ x: wp.x, y: wp.y })));
+        setWireDragInitMouseWorld({ x: w.x, y: w.y });
+        setDragStartMousePos({ x: sx, y: sy });
+        setSelectedPin(null); setSelectedComponents([]);
+      } else {
+        setSelectedWire(ww); setSelectedPin(null); setSelectedComponents([]); setDraggingPin(null);
+        setPotentialWaypoint({ wire: ww, segmentIndex: hi.segmentIndex, startX: w.x, startY: w.y });
+      }
+      draw(); return;
+    }
   }
 
   // Resize
@@ -314,8 +362,8 @@ canvas.addEventListener("mousemove", e => {
 
   canvas.style.cursor =
     isResizingComponent ? "nwse-resize" :
-    isDraggingCanvas || isDraggingWaypoint ? "grabbing" :
-    isSelectMode && !isDraggingPin && !isDraggingComponent ? "crosshair" : "grab";
+    isDraggingCanvas || isDraggingWaypoint || isDraggingWire ? "grabbing" :
+    isRouting || (isSelectMode && !isDraggingPin && !isDraggingComponent) ? "crosshair" : "grab";
 
   if (isDraggingWaypoint) {
     isDraggingWaypoint.wire.waypoints[isDraggingWaypoint.index] = { x: snapToGrid(w.x), y: snapToGrid(w.y) };
@@ -333,6 +381,16 @@ canvas.addEventListener("mousemove", e => {
     setDraggingWaypoint({ wire, index: potentialWaypoint.segmentIndex });
     setSelectedWaypoint({ wire, index: potentialWaypoint.segmentIndex });
     setPotentialWaypoint(null);
+    draw(); return;
+  }
+
+  if (isDraggingWire && Math.hypot(sx - dragStartMousePos.x, sy - dragStartMousePos.y) > 5) {
+    const dx = w.x - wireDragInitMouseWorld.x;
+    const dy = w.y - wireDragInitMouseWorld.y;
+    isDraggingWire.waypoints = wireDragInitWaypoints.map(wp => ({
+      x: snapToGrid(wp.x + dx),
+      y: snapToGrid(wp.y + dy)
+    }));
     draw(); return;
   }
 
@@ -380,9 +438,9 @@ canvas.addEventListener("mouseup", e => {
         const top = isDraggingPin.type === "input" ? isDraggingPin : tp;
         if (!wireExists(wires, fp, top)) { wires.push({ from: fp, to: top }); top.pin.connections.push(fp.component); if (isSimulating) simTick(); }
       } else {
-        popup.style.left = sx + "px"; popup.style.top = sy + "px";
-        popup.classList.add("show"); setPopupVisible(true); setPopupSelectedIndex(0); setPopupSourcePin(isDraggingPin);
-        updatePopupSel();
+        setIsRouting(true);
+        setRoutingSourcePin(isDraggingPin);
+        setRoutingWaypoints([{ x: snapToGrid(w.x), y: snapToGrid(w.y) }]);
       }
     }
     setDraggingPin(null); setHoveredPin(null);
@@ -391,6 +449,9 @@ canvas.addEventListener("mouseup", e => {
     setDraggingComponent(null);
   }
 
+  if (isDraggingWire) {
+    setDraggingWire(null);
+  }
   setResizingComponent(null);
   if (isDraggingCanvas) saveCameraState();
   setDraggingCanvas(false);
@@ -474,6 +535,10 @@ document.addEventListener("keydown", e => {
   else if (e.key === "5") autoSpawn("label_box");
   else if (e.key === "6") autoSpawn("label");
   else if (e.key === "Escape") {
+    if (isRouting) {
+      setIsRouting(false); setRoutingSourcePin(null); setRoutingWaypoints([]);
+      draw(); return;
+    }
     setSelectedPin(null); setSelectedWire(null); setSelectedComponents([]);
     setDraggingPin(null); setHoveredPin(null); setSelectedWaypoint(null);
     draw();

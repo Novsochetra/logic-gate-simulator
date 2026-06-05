@@ -46,6 +46,12 @@ export let historyTempState = null;
 export let isSimulating = false;
 export let simInterval = null;
 export let isDraggingMinimap = false;
+export let isRouting = false;
+export let routingSourcePin = null;
+export let routingWaypoints = [];
+export let isDraggingWire = null;
+export let wireDragInitWaypoints = [];
+export let wireDragInitMouseWorld = { x: 0, y: 0 };
 
 // Workspace state
 export let workspaces = [];
@@ -89,3 +95,9 @@ export function setSimInterval(v) { simInterval = v; }
 export function setDraggingMinimap(v) { isDraggingMinimap = v; }
 export function setWorkspaces(v) { workspaces = v; }
 export function setActiveWorkspaceId(v) { activeWorkspaceId = v; }
+export function setIsRouting(v) { isRouting = v; }
+export function setRoutingSourcePin(v) { routingSourcePin = v; }
+export function setRoutingWaypoints(v) { routingWaypoints = v; }
+export function setDraggingWire(v) { isDraggingWire = v; }
+export function setWireDragInitWaypoints(v) { wireDragInitWaypoints = v; }
+export function setWireDragInitMouseWorld(v) { wireDragInitMouseWorld = v; }

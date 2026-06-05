@@ -158,6 +158,77 @@ export function drawWires(ctx, wireList, selWire, selWaypoint, onlySelected = fa
   });
 }
 
+// --- Draw routing preview (manual waypoint placement) ---
+export function drawRoutingPreview(ctx, sourcePin, waypoints, mouseWorld) {
+  const sr = 8 * camera.zoom;
+  const fX = sourcePin.component.x + sourcePin.pin.x;
+  const fY = sourcePin.component.y + sourcePin.pin.y;
+
+  const allPoints = [{ x: fX, y: fY }, ...waypoints, mouseWorld];
+  const allSp = allPoints.map(p => worldToScreen(p.x, p.y, camera));
+
+  // Draw solid segments (placed waypoints)
+  for (let i = 0; i < waypoints.length; i++) {
+    const pts = [allSp[i], allSp[i + 1]];
+
+    ctx.strokeStyle = THEME.wireBackground;
+    ctx.lineWidth = 11;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.lineTo(pts[1].x, pts[1].y);
+    ctx.stroke();
+
+    ctx.strokeStyle = THEME.wireDragging;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.lineTo(pts[1].x, pts[1].y);
+    ctx.stroke();
+  }
+
+  // Draw dashed segment (last waypoint or source → cursor)
+  const lastIdx = waypoints.length;
+  const dashFrom = allSp[lastIdx];
+  const dashTo = allSp[allSp.length - 1];
+
+  ctx.strokeStyle = THEME.wireBackground;
+  ctx.lineWidth = 11;
+  ctx.lineCap = "round";
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(dashFrom.x, dashFrom.y);
+  ctx.lineTo(dashTo.x, dashTo.y);
+  ctx.stroke();
+
+  ctx.strokeStyle = THEME.wireDragging;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(dashFrom.x, dashFrom.y);
+  ctx.lineTo(dashTo.x, dashTo.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw waypoint dots
+  for (let i = 0; i < waypoints.length; i++) {
+    const swp = allSp[i + 1];
+    ctx.fillStyle = THEME.waypointInactiveBg;
+    ctx.strokeStyle = THEME.waypointInactiveStroke;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(swp.x, swp.y, 6 * camera.zoom, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Draw cursor dot
+  const cDot = allSp[allSp.length - 1];
+  ctx.fillStyle = "rgba(0, 122, 255, 0.3)";
+  ctx.beginPath();
+  ctx.arc(cDot.x, cDot.y, 5 * camera.zoom, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 // --- Draw dragging wire preview ---
 export function drawDraggingWire(ctx, fromComp, fromPin, fromType, mouseWorld, hoveredComponent) {
   const sr = 8 * camera.zoom;

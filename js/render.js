@@ -1,9 +1,9 @@
 import { THEME, GRID_SIZE } from "./constants.js";
-import { camera, components, wires, selectedComponents, selectedWire, selectedWaypoint, isSelectingBox, selectionBoxStart, selectionBoxEnd, isDraggingPin, pinDragDidMove, hoveredPin, mousePos } from "./state.js";
+import { camera, components, wires, selectedComponents, selectedWire, selectedWaypoint, isSelectingBox, selectionBoxStart, selectionBoxEnd, isDraggingPin, pinDragDidMove, hoveredPin, mousePos, isRouting, routingSourcePin, routingWaypoints } from "./state.js";
 import { screenToWorld } from "./utils.js";
 import { getMainCtx, getDpr } from "./canvas.js";
 import { drawGrid } from "./grid.js";
-import { drawWires, drawDraggingWire, getWirePath } from "./wiring.js";
+import { drawWires, drawDraggingWire, drawRoutingPreview, getWirePath } from "./wiring.js";
 
 let minimapConfig = { mapMinX: 0, mapMinY: 0, mapScale: 1, offsetX: 0, offsetY: 0 };
 
@@ -121,6 +121,11 @@ export function draw() {
   if (isDraggingPin && pinDragDidMove) {
     drawDraggingWire(ctx, isDraggingPin.component, isDraggingPin.pin, isDraggingPin.type,
       screenToWorld(mousePos.x, mousePos.y, camera), hoveredPin ? hoveredPin.component : null);
+  }
+
+  if (isRouting) {
+    drawRoutingPreview(ctx, routingSourcePin, routingWaypoints,
+      screenToWorld(mousePos.x, mousePos.y, camera));
   }
 
   ctx.restore();
