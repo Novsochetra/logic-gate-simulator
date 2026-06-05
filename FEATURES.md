@@ -35,7 +35,7 @@
 26. **Pin-to-Pin Wiring** — Drag from an output pin to an input pin (or vice versa) to create a wire.
 27. **Orthogonal (Manhattan) Wiring** — All wires are drawn as straight lines with rounded corners.
 28. **Self-Loop Wiring** — AND/NOT gate output can connect back to its own input; wire routes around the component.
-29. **Manual Wire Routing on Creation** — Drag from a pin and release on empty canvas to enter manual routing mode; click on canvas to place straight-line waypoints one by one; click on an opposite-type pin to complete the wire with waypoints; click on a same-type pin or press Escape to cancel.
+29. **Manual Wire Routing on Creation** — Drag from a pin and release on empty canvas to enter manual routing mode; dashed preview and placement cursor snap to grid as you move; click on canvas to place straight-line waypoints one by one; click on an opposite-type pin to complete the wire with waypoints; click on a same-type pin or press Escape to cancel.
 30. **Pin-to-Pin Auto-Route** — Dragging directly from a pin to another opposite-type pin creates an auto-routed (orthogonal) wire with no waypoints.
 31. **Wire Visual States** — Active (green), inactive (gray), selected (glowing green with inner white line).
 32. **Wire Crossing Discrimination** — Background outline stroke helps distinguish which wire is on top at intersections.
