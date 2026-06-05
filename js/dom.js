@@ -31,3 +31,12 @@ export const workspacesBtn = document.getElementById("workspacesBtn");
 export const saveWorkspaceBtn = document.getElementById("saveWorkspaceBtn");
 export const newWorkspaceName = document.getElementById("newWorkspaceName");
 export const themeList = document.getElementById("themeList");
+
+export const undoBtn = document.getElementById("undoBtn");
+export const redoBtn = document.getElementById("redoBtn");
+export const selectionToolbar = document.getElementById("selectionToolbar");
+export const toolbarDeleteBtn = document.getElementById("toolbarDeleteBtn");
+export const toolbarCopyBtn = document.getElementById("toolbarCopyBtn");
+export const toolbarPasteBtn = document.getElementById("toolbarPasteBtn");
+export const selectAllBtn = document.getElementById("selectAllBtn");
+export const copyIcInternalsBtn = document.getElementById("copyIcInternalsBtn");

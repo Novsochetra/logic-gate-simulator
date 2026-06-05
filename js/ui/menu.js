@@ -1,11 +1,23 @@
-import { setSelectMode } from "../state.js";
+import {
+  setSelectMode,
+  selectedComponents, selectedPin, selectedWire, selectedWaypoint,
+  components,
+  setSelectedComponents, setSelectedPin, setSelectedWire, setSelectedWaypoint,
+  popupVisible, setPopupVisible, setPopupSourcePin,
+} from "../state.js";
 import {
   menuBtn, menuDropdown, modePanBtn, modeSelectBtn,
   copyBtn, pasteBtn, deleteBtn, helpBtn,
   closeHelpBtn, helpModal,
+  undoBtn, redoBtn,
+  selectionToolbar, toolbarDeleteBtn, toolbarCopyBtn, toolbarPasteBtn,
+  selectAllBtn, copyIcInternalsBtn,
+  popup,
 } from "../dom.js";
 import { doCopy, doPaste, doDelete, autoSpawn } from "../actions.js";
+import { performUndo, performRedo } from "../history.js";
 import { modeUI } from "../input/keyboard.js";
+import { draw } from "../render.js";
 
 export function setupMenuUI() {
   menuBtn?.addEventListener("click", e => { e.stopPropagation(); menuDropdown.classList.toggle("show"); });
@@ -31,4 +43,24 @@ export function setupMenuUI() {
   pasteBtn?.addEventListener("click", () => doPaste());
   deleteBtn?.addEventListener("click", () => doDelete());
   helpBtn?.addEventListener("click", () => helpModal?.classList.toggle("show"));
+
+  // Undo / Redo
+  undoBtn?.addEventListener("click", () => { performUndo(); draw(); });
+  redoBtn?.addEventListener("click", () => { performRedo(); draw(); });
+
+  // Selection toolbar
+  toolbarDeleteBtn?.addEventListener("click", () => { doDelete(); draw(); });
+  toolbarCopyBtn?.addEventListener("click", () => { doCopy(); draw(); });
+  toolbarPasteBtn?.addEventListener("click", () => { doPaste(); draw(); });
+
+  // Menu extras
+  selectAllBtn?.addEventListener("click", () => {
+    setSelectedComponents([...components]);
+    setSelectedPin(null);
+    setSelectedWire(null);
+    setSelectedWaypoint(null);
+    if (popupVisible) { popup?.classList.remove("show"); setPopupVisible(false); setPopupSourcePin(null); }
+    draw();
+  });
+  copyIcInternalsBtn?.addEventListener("click", () => { doCopy(true); draw(); });
 }

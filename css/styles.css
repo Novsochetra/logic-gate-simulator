@@ -647,6 +647,87 @@ body {
 .workspace-action-btn.delete:hover { background: rgba(255, 69, 58, 0.15); border-color: #ff453a; }
 #newWorkspaceName:focus { border-color: var(--color-primary) !important; outline: none; }
 
+/* Undo/Redo Group */
+.undo-redo-group {
+  position: fixed;
+  bottom: 182px;
+  right: 20px;
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  background: var(--color-button-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--color-border-default);
+  border-radius: 14px;
+  padding: 4px;
+  box-shadow: 0 4px 12px var(--color-shadow);
+}
+.undo-redo-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-main);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.1s, opacity 0.2s;
+  outline: none;
+  opacity: 1;
+}
+.undo-redo-btn:hover { background: var(--color-border-default); }
+.undo-redo-btn:active { transform: scale(0.9); }
+.undo-redo-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Selection Toolbar */
+.selection-toolbar {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  z-index: 2400;
+  display: none;
+  align-items: center;
+  background: var(--color-nav-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 14px;
+  padding: 4px;
+  box-shadow: 0 4px 12px var(--color-shadow);
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+.selection-toolbar.show {
+  display: flex;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.toolbar-btn {
+  background: transparent;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.toolbar-btn:hover { background: var(--color-border-subtle); color: var(--color-text-main); }
+.toolbar-btn:active { transform: scale(0.92); }
+
 /* Mobile */
 @media (max-width: 768px) {
   .nav-bar {
@@ -665,6 +746,10 @@ body {
   .zoom-group { bottom: 70px; left: 12px; padding: 2px; }
   .zoom-btn { width: 32px; height: 32px; }
   .zoom-indicator { font-size: 11px; min-width: 40px; }
+  .undo-redo-group { bottom: 160px; right: 12px; padding: 2px; }
+  .undo-redo-btn { width: 32px; height: 32px; }
+  .selection-toolbar { top: 12px; }
+  .toolbar-btn { width: 32px; height: 32px; }
   [data-tooltip]::after { display: none !important; }
   .help-content { width: 95vw; padding: 16px; margin: 10px; }
 }

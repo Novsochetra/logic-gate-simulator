@@ -6,7 +6,7 @@ import {
   setSelectedComponents, setSelectedPin, setSelectedWire, setSelectedWaypoint,
   setClipboard, setPasteOffset, setEditingComponent, setComponents, setWires,
   setPopupVisible, setPopupSourcePin, setPopupSelectedIndex,
-  setDraggingComponent,
+  setDraggingComponent, isDraggingComponent,
   setDragStartWorld, setDragStartMousePos,
   setSelectedComponentsInitPos, setComponentDragDidMove, setAffectedWiresInitWaypoints,
   setActiveWorkspaceId,
