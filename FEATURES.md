@@ -95,7 +95,7 @@
 
 ## Hamburger Action Menu
 72. **Top-Left Hamburger Menu** — Contains all action buttons organized with dividers and keyboard shortcut hints.
-73. **Menu Items** — Workspaces, Create IC (G), Unpack IC (Shift+G), Copy (Ctrl+C), Paste (Ctrl+V), Delete (Del), Export, Import, Help (H).
+73. **Menu Items** — Workspaces, Create IC (G), Unpack IC (Shift+G), Copy (Ctrl+C), Paste (Ctrl+V), Delete (Del), Export, Import, Theme, Help (H).
 74. **Click-Outside-to-Close** — Clicking outside the menu closes it.
 75. **Auto-Close on Item Click** — Selecting any menu item closes the dropdown.
 
@@ -117,7 +117,7 @@
 
 ## Help Modal
 88. **Help (H)** — Opens modal listing all keyboard shortcuts.
-89. **Comprehensive Shortcut List** — Includes all mode keys, component keys, simulation, undo/redo, copy/paste, zoom, select all, delete, escape, double-click actions.
+89. **Comprehensive Shortcut List** — Includes all mode keys, component keys, simulation, undo/redo, copy/paste, zoom, select all, delete, escape, double-click actions, and theme cycling (Ctrl/Cmd+T).
 90. **Close on Escape** — Escape key closes the help modal.
 91. **Click Outside to Close** — Click overlay to dismiss.
 
@@ -131,19 +131,23 @@
 98. **Zoom Group Mobile Position** — Adjusted positioning for bottom controls on mobile.
 
 ## Theming & Visual Polish
-99. **CSS Custom Properties (Dark Theme)** — Comprehensive design token system for all UI colors.
-100. **Canvas Color Theme (THEME object)** — JavaScript color tokens for all canvas-rendered elements (grid, wires, components, pins, minimap).
-101. **CSS Tooltips** — Pure CSS tooltips with `data-tooltip` attribute; positions: top, bottom, left, right.
-102. **Glassmorphism UI** — Backdrop blur effects on panels, nav bar, menu, and modals.
-103. **Responsive Media Queries** — Mobile breakpoint at 768px with adjusted sizes and hidden elements.
+99. **CSS Custom Properties (Multi-Theme)** — Comprehensive design token system (`--color-*` CSS variables) with 5 theme variants controlled by `data-theme` attribute on `<html>`.
+100. **Canvas Color Theme (THEME Proxy)** — JavaScript color tokens for all canvas-rendered elements served via Proxy for zero-change theme switching across all rendering modules.
+101. **Theme Modal** — Hamburger menu → Theme opens a modal with 5 selectable theme rows (Dark, Light, Gruvbox, Dracula, Nord); selected row bordered with primary color.
+102. **Theme Keyboard Navigation** — Arrow Up/Down to browse themes with live preview; Enter to confirm and close; Escape to close.
+103. **Theme Keyboard Shortcut** — `Cmd/Ctrl + T` cycles through all 5 themes.
+104. **Theme Persistence** — Active theme saved to `localStorage` (`logicSimulatorTheme`) and restored on page load; defaults to Dark.
+105. **CSS Tooltips** — Pure CSS tooltips with `data-tooltip` attribute; positions: top, bottom, left, right.
+106. **Glassmorphism UI** — Backdrop blur effects on panels, nav bar, menu, and modals.
+107. **Responsive Media Queries** — Mobile breakpoint at 768px with adjusted sizes and hidden elements.
 
 ## Miscellaneous
-104. **Spawn Component at Center** — Pressing 1-6 or clicking nav items spawns component at screen center.
-105. **Auto-Offset on Spawn Collision** — If spawn position overlaps existing component, auto-offsets to avoid stacking.
-106. **Smart Spawn Grid Alignment** — Components spawn snapped to half-grid.
-107. **Label Box Resize** — Bottom-right triangular handle; snap to half-grid; minimum size enforced.
-108. **Label Editor Inline** — Positioned over the component; scaled with camera zoom.
-109. **Escape to Deselect** — Pressing Escape deselects all, clears pins, wires, and closes open modals.
-110. **Keyboard Shortcuts Disabled in Inputs** — Global keydown handler skips when an INPUT or TEXTAREA is focused.
-111. **Simulation Tick on Wire Creation** — If simulation is running, immediately evaluates new wire connections.
-112. **roundRect Polyfill** — Fallback implementation for `CanvasRenderingContext2D.roundRect()`.
+108. **Spawn Component at Center** — Pressing 1-6 or clicking nav items spawns component at screen center.
+109. **Auto-Offset on Spawn Collision** — If spawn position overlaps existing component, auto-offsets to avoid stacking.
+110. **Smart Spawn Grid Alignment** — Components spawn snapped to half-grid.
+111. **Label Box Resize** — Bottom-right triangular handle; snap to half-grid; minimum size enforced.
+112. **Label Editor Inline** — Positioned over the component; scaled with camera zoom.
+113. **Escape to Deselect** — Pressing Escape deselects all, clears pins, wires, and closes open modals.
+114. **Keyboard Shortcuts Disabled in Inputs** — Global keydown handler skips when an INPUT or TEXTAREA is focused.
+115. **Simulation Tick on Wire Creation** — If simulation is running, immediately evaluates new wire connections.
+116. **roundRect Polyfill** — Fallback implementation for `CanvasRenderingContext2D.roundRect()`.
