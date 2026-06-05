@@ -35,6 +35,8 @@
         <button class="menu-item" id="exportBtn">📤 Export</button>
         <button class="menu-item" id="importBtn">📥 Import</button>
         <div class="menu-divider"></div>
+        <button class="menu-item" id="themeBtn">🎨 Theme</button>
+        <div class="menu-divider"></div>
         <button class="menu-item" id="helpBtn">❓ Help <span class="menu-shortcut">H</span></button>
       </div>
     </div>
@@ -150,6 +152,7 @@
           <button id="closeHelpBtn">&times;</button>
         </div>
         <div class="help-grid">
+          <div class="help-row"><span class="help-key">Cmd/Ctrl + T</span><span class="help-desc">Cycle Theme</span></div>
           <div class="help-row"><span class="help-key">H</span><span class="help-desc">Show / Hide Help Menu</span></div>
           <div class="help-row"><span class="help-key">Space</span><span class="help-desc">Play / Pause Simulation</span></div>
           <div class="help-row"><span class="help-key">1 - 6</span><span class="help-desc">Add Component (6 for Overlay Label)</span></div>
@@ -184,6 +187,17 @@
           <button id="saveWorkspaceBtn" style="background:var(--color-primary); color:white; border:none; padding:10px 16px; border-radius:8px; font-weight:500; cursor:pointer;">Create</button>
         </div>
         <div id="workspaceList" style="display:flex; flex-direction:column; max-height:300px; overflow-y:auto; border-top:1px solid var(--color-border-subtle); padding-top:12px;"></div>
+      </div>
+    </div>
+
+    <!-- Theme Modal -->
+    <div class="modal-overlay" id="themeModal">
+      <div class="help-content" style="width: 380px;">
+        <div class="help-header">
+          <h2>Choose Theme</h2>
+          <button id="closeThemeBtn">&times;</button>
+        </div>
+        <div id="themeList"></div>
       </div>
     </div>
 

@@ -1,4 +1,5 @@
 import { THEME, GRID_SIZE } from "./constants.js";
+import { initTheme, cycleTheme, setTheme, onThemeChange, THEME_LIST, getActiveThemeKey } from "./theme.js";
 import {
   camera, components, wires, selectedComponents, selectedWire, selectedPin,
   selectedWaypoint, isSelectMode, isDraggingCanvas, isDraggingComponent,
@@ -47,6 +48,9 @@ const modePanBtn = document.getElementById("modePan");
 const modeSelectBtn = document.getElementById("modeSelect");
 const closeHelpBtn = document.getElementById("closeHelpBtn");
 const closeWorkspaceBtn = document.getElementById("closeWorkspaceBtn");
+const themeBtn = document.getElementById("themeBtn");
+const themeModal = document.getElementById("themeModal");
+const closeThemeBtn = document.getElementById("closeThemeBtn");
 
 // ==================== SERIALIZATION ====================
 function serializeCircuit(comps, wireList) {
@@ -421,6 +425,7 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape") {
     if (helpModal.classList.contains("show")) { helpModal.classList.remove("show"); e.preventDefault(); return; }
     if (workspaceModal.classList.contains("show")) { workspaceModal.classList.remove("show"); e.preventDefault(); return; }
+    if (themeModal.classList.contains("show")) { closeThemeModal(); e.preventDefault(); return; }
   }
 
   if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
@@ -430,6 +435,12 @@ document.addEventListener("keydown", e => {
   if (e.key.toLowerCase() === "g" && !e.metaKey && !e.ctrlKey) { e.preventDefault(); e.shiftKey ? document.getElementById("unpackIcBtn").click() : document.getElementById("createIcBtn").click(); return; }
   if (helpModal.classList.contains("show") && e.key !== "Escape") return;
   if (workspaceModal.classList.contains("show") && e.key !== "Escape") return;
+  if (themeModal.classList.contains("show")) {
+    if (e.key === "ArrowDown") { e.preventDefault(); updateThemeSelection(1); return; }
+    if (e.key === "ArrowUp") { e.preventDefault(); updateThemeSelection(-1); return; }
+    if (e.key === "Enter") { e.preventDefault(); closeThemeModal(); return; }
+    return;
+  }
   if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomAtCenter(1.05, canvas.width / getDpr(), canvas.height / getDpr(), zoomIndicator); draw(); return; }
   if (e.key === "-") { e.preventDefault(); zoomAtCenter(1 / 1.05, canvas.width / getDpr(), canvas.height / getDpr(), zoomIndicator); draw(); return; }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? performRedo() : performUndo(); return; }
@@ -443,6 +454,7 @@ document.addEventListener("keydown", e => {
     if (popupVisible) { popup.classList.remove("show"); setPopupVisible(false); setPopupSourcePin(null); }
     draw(); return;
   }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "t" && !e.shiftKey) { e.preventDefault(); cycleTheme(); draw(); return; }
   if ((e.metaKey || e.ctrlKey) && e.key === "0") { e.preventDefault(); resetCamera(); draw(); return; }
   if ((e.key === "Delete" || e.key === "Backspace") && (selectedPin || selectedWire || selectedComponents.length > 0 || selectedWaypoint)) { e.preventDefault(); doDelete(); return; }
 
@@ -647,6 +659,46 @@ labelEditor.addEventListener("keydown", e => { if (e.key === "Enter") labelEdito
 menuBtn?.addEventListener("click", e => { e.stopPropagation(); menuDropdown.classList.toggle("show"); });
 document.addEventListener("click", e => { if (menuDropdown?.classList.contains("show") && !menuDropdown.contains(e.target) && e.target !== menuBtn) menuDropdown.classList.remove("show"); });
 menuDropdown?.querySelectorAll(".menu-item").forEach(item => item.addEventListener("click", () => menuDropdown.classList.remove("show")));
+
+// ==================== THEME ====================
+let selectedThemeIndex = 0;
+
+function renderThemeList() {
+  const list = document.getElementById("themeList");
+  list.innerHTML = "";
+  THEME_LIST.forEach((name, i) => {
+    const row = document.createElement("div");
+    row.className = "theme-option" + (name === getActiveThemeKey() ? " selected" : "");
+    row.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+    row.addEventListener("click", () => { setTheme(name); draw(); closeThemeModal(); });
+    list.appendChild(row);
+  });
+  selectedThemeIndex = THEME_LIST.indexOf(getActiveThemeKey());
+}
+
+function updateThemeSelection(dir) {
+  const rows = document.getElementById("themeList").querySelectorAll(".theme-option");
+  if (!rows.length) return;
+  selectedThemeIndex = (selectedThemeIndex + dir + THEME_LIST.length) % THEME_LIST.length;
+  rows.forEach(r => r.classList.remove("selected"));
+  rows[selectedThemeIndex].classList.add("selected");
+  setTheme(THEME_LIST[selectedThemeIndex]);
+  draw();
+}
+
+function openThemeModal() {
+  themeModal.classList.add("show");
+  renderThemeList();
+  menuDropdown.classList.remove("show");
+}
+
+function closeThemeModal() {
+  themeModal.classList.remove("show");
+}
+
+themeBtn?.addEventListener("click", openThemeModal);
+closeThemeBtn?.addEventListener("click", closeThemeModal);
+themeModal?.addEventListener("mousedown", e => { if (e.target === themeModal) closeThemeModal(); });
 
 // ==================== MODALS ====================
 closeHelpBtn?.addEventListener("click", () => helpModal.classList.remove("show"));
@@ -878,6 +930,8 @@ function updateCamFromMinimap(e) {
 })();
 
 // ==================== BOOT ====================
+initTheme();
+onThemeChange(() => draw());
 loadCameraState();
 zoomIndicator.textContent = Math.round(camera.zoom * 100) + "%";
 initWorkspaces();
