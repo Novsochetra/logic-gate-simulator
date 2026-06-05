@@ -9,7 +9,6 @@ import {
   componentDragDidMove, affectedWiresInitWaypoints, resizeStart, potentialWaypoint,
   selectionBoxStart, selectionBoxEnd, historyTempState, mousePos, hoveredPin,
   undoStack, redoStack, isRouting, routingSourcePin, routingWaypoints,
-  isDraggingWire, wireDragInitWaypoints, wireDragInitMouseWorld,
   setSelectMode, setDraggingCanvas, setDraggingComponent, setDraggingPin,
   setDraggingWaypoint, setDragStart, setMousePos, setPinDragDidMove,
   setSelectedComponents, setSelectedPin, setSelectedWire, setHoveredPin, setSimulating,
@@ -19,7 +18,6 @@ import {
   setHistoryTempState, setPopupVisible, setPopupSourcePin, setPopupSelectedIndex,
   setSelectedWaypoint, setComponents, setWires, setNextId, allocateNextId,
   setIsRouting, setRoutingSourcePin, setRoutingWaypoints,
-  setDraggingWire, setWireDragInitWaypoints, setWireDragInitMouseWorld,
 } from "./state.js";
 import { screenToWorld, snapToGrid, installRoundRect } from "./utils.js";
 import { setupCanvas, getMainCtx, getDpr } from "./canvas.js";
@@ -140,7 +138,6 @@ function loadSerializedState(jsonStr) {
     setSelectedWire(null);
     setSelectedWaypoint(null);
     setIsRouting(false); setRoutingSourcePin(null); setRoutingWaypoints([]);
-    setDraggingWire(null);
     draw();
     return true;
   } catch (e) { console.error(e); return false; }
@@ -299,18 +296,8 @@ canvas.addEventListener("mousedown", e => {
   for (let ww of wires) {
     const hi = isPointNearWire(w.x, w.y, ww);
     if (hi.hit) {
-      if (selectedWire === ww && ww.waypoints?.length) {
-        // Already selected wire with waypoints → drag whole wire
-        setDraggingWire(ww);
-        setWireDragInitWaypoints(ww.waypoints.map(wp => ({ x: wp.x, y: wp.y })));
-        setWireDragInitMouseWorld({ x: w.x, y: w.y });
-        setDragStartMousePos({ x: sx, y: sy });
-        setSelectedPin(null); setSelectedComponents([]);
-      } else {
-        // Click on wire segment → create new waypoint
-        setSelectedWire(ww); setSelectedPin(null); setSelectedComponents([]); setDraggingPin(null);
-        setPotentialWaypoint({ wire: ww, segmentIndex: hi.segmentIndex, startX: w.x, startY: w.y });
-      }
+      setSelectedWire(ww); setSelectedPin(null); setSelectedComponents([]); setDraggingPin(null);
+      setPotentialWaypoint({ wire: ww, segmentIndex: hi.segmentIndex, startX: w.x, startY: w.y });
       draw(); return;
     }
   }
@@ -363,7 +350,7 @@ canvas.addEventListener("mousemove", e => {
 
   canvas.style.cursor =
     isResizingComponent ? "nwse-resize" :
-    isDraggingCanvas || isDraggingWaypoint || isDraggingWire ? "grabbing" :
+    isDraggingCanvas || isDraggingWaypoint ? "grabbing" :
     isRouting || (isSelectMode && !isDraggingPin && !isDraggingComponent) ? "crosshair" : "grab";
 
   if (isDraggingWaypoint) {
@@ -382,16 +369,6 @@ canvas.addEventListener("mousemove", e => {
     setDraggingWaypoint({ wire, index: potentialWaypoint.segmentIndex });
     setSelectedWaypoint({ wire, index: potentialWaypoint.segmentIndex });
     setPotentialWaypoint(null);
-    draw(); return;
-  }
-
-  if (isDraggingWire && Math.hypot(sx - dragStartMousePos.x, sy - dragStartMousePos.y) > 5) {
-    const dx = w.x - wireDragInitMouseWorld.x;
-    const dy = w.y - wireDragInitMouseWorld.y;
-    isDraggingWire.waypoints = wireDragInitWaypoints.map(wp => ({
-      x: snapToGrid(wp.x + dx),
-      y: snapToGrid(wp.y + dy)
-    }));
     draw(); return;
   }
 
@@ -450,9 +427,6 @@ canvas.addEventListener("mouseup", e => {
     setDraggingComponent(null);
   }
 
-  if (isDraggingWire) {
-    setDraggingWire(null);
-  }
   setResizingComponent(null);
   if (isDraggingCanvas) saveCameraState();
   setDraggingCanvas(false);
