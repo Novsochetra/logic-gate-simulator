@@ -673,6 +673,10 @@ function renderThemeList() {
     row.addEventListener("click", () => { setTheme(name); draw(); closeThemeModal(); });
     list.appendChild(row);
   });
+  const hint = document.createElement("div");
+  hint.className = "theme-hint";
+  hint.textContent = "\u2191\u2193 to browse \u00b7 Enter to confirm \u00b7 Esc to close";
+  list.appendChild(hint);
   selectedThemeIndex = THEME_LIST.indexOf(getActiveThemeKey());
 }
 
