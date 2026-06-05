@@ -1,6 +1,6 @@
 import { THEME, GRID_SIZE } from "./constants.js";
 import { camera, components, wires, selectedComponents, selectedWire, selectedWaypoint, isSelectingBox, selectionBoxStart, selectionBoxEnd, isDraggingPin, pinDragDidMove, hoveredPin, mousePos, isRouting, routingSourcePin, routingWaypoints } from "./state.js";
-import { screenToWorld } from "./utils.js";
+import { screenToWorld, snapToGrid } from "./utils.js";
 import { getMainCtx, getDpr } from "./canvas.js";
 import { drawGrid } from "./grid.js";
 import { drawWires, drawDraggingWire, drawRoutingPreview, getWirePath } from "./wiring.js";
@@ -124,8 +124,9 @@ export function draw() {
   }
 
   if (isRouting) {
+    const mw = screenToWorld(mousePos.x, mousePos.y, camera);
     drawRoutingPreview(ctx, routingSourcePin, routingWaypoints,
-      screenToWorld(mousePos.x, mousePos.y, camera));
+      { x: snapToGrid(mw.x), y: snapToGrid(mw.y) });
   }
 
   ctx.restore();
