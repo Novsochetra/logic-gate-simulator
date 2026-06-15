@@ -17,7 +17,7 @@ import { draw } from "./render.js";
 import { wireExists, removeWiresForPin } from "./wiring.js";
 import { pushHistory, saveToLocalStorage, saveWorkspaceList } from "./history.js";
 import { simTick } from "./simulation.js";
-import { serializeCircuit, parseCircuit, loadSerializedState } from "./serialization.js";
+import { serializeCircuit, serializeState, parseCircuit, loadSerializedState } from "./serialization.js";
 import {
   popup, labelEditor, canvas,
 } from "./dom.js";
