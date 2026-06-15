@@ -4,7 +4,7 @@ import { screenToWorld, snapToGrid } from "./utils.js";
 import { getMainCtx, getDpr } from "./canvas.js";
 import { drawGrid } from "./grid.js";
 import { drawWires, drawDraggingWire, drawRoutingPreview, getWirePath } from "./wiring.js";
-import { syncSelectionToolbar } from "./ui/toolbar.js";
+import { syncSelectionToolbar, syncCancelWireButton } from "./ui/toolbar.js";
 
 let minimapConfig = { mapMinX: 0, mapMinY: 0, mapScale: 1, offsetX: 0, offsetY: 0 };
 
@@ -134,4 +134,5 @@ export function draw() {
 
   drawMinimap();
   syncSelectionToolbar();
+  syncCancelWireButton();
 }

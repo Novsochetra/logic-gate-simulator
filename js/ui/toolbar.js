@@ -1,9 +1,10 @@
 import {
   undoStack, redoStack,
   selectedComponents, selectedPin, selectedWire, selectedWaypoint,
+  isDraggingPin, pinDragDidMove, isRouting,
 } from "../state.js";
 import {
-  undoBtn, redoBtn, selectionToolbar,
+  undoBtn, redoBtn, selectionToolbar, cancelWireBtn,
 } from "../dom.js";
 
 export function syncSelectionToolbar() {
@@ -12,3 +13,12 @@ export function syncSelectionToolbar() {
   if (undoBtn) undoBtn.disabled = undoStack.length === 0;
   if (redoBtn) redoBtn.disabled = redoStack.length === 0;
 }
+
+export function syncCancelWireButton() {
+  const show = (isDraggingPin && pinDragDidMove) || isRouting;
+  cancelWireBtn?.classList.toggle("show", show);
+}
+
+cancelWireBtn?.addEventListener("click", () => {
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+});

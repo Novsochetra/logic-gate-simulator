@@ -728,6 +728,47 @@ body {
 .toolbar-btn:hover { background: var(--color-border-subtle); color: var(--color-text-main); }
 .toolbar-btn:active { transform: scale(0.92); }
 
+/* Cancel Wire Button */
+.cancel-wire-btn {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2550;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--color-nav-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  font-size: 20px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px var(--color-shadow);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  opacity: 0;
+  transform: translateX(-50%) translateY(10px);
+  pointer-events: none;
+  outline: none;
+}
+.cancel-wire-btn.show {
+  display: flex;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.cancel-wire-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+.cancel-wire-btn:active {
+  transform: translateX(-50%) translateY(0) scale(0.92);
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .nav-bar {
@@ -750,6 +791,7 @@ body {
   .undo-redo-btn { width: 32px; height: 32px; }
   .selection-toolbar { top: 12px; }
   .toolbar-btn { width: 32px; height: 32px; }
+  .cancel-wire-btn { bottom: 70px; }
   [data-tooltip]::after { display: none !important; }
   .help-content { width: 95vw; padding: 16px; margin: 10px; }
 }

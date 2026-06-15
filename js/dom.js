@@ -40,3 +40,4 @@ export const toolbarCopyBtn = document.getElementById("toolbarCopyBtn");
 export const toolbarPasteBtn = document.getElementById("toolbarPasteBtn");
 export const selectAllBtn = document.getElementById("selectAllBtn");
 export const copyIcInternalsBtn = document.getElementById("copyIcInternalsBtn");
+export const cancelWireBtn = document.getElementById("cancelWireBtn");

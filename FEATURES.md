@@ -35,7 +35,7 @@
 26. **Pin-to-Pin Wiring** — Drag from an output pin to an input pin (or vice versa) to create a wire.
 27. **Orthogonal (Manhattan) Wiring** — All wires are drawn as straight lines with rounded corners.
 28. **Self-Loop Wiring** — AND/NOT gate output can connect back to its own input; wire routes around the component.
-29. **Manual Wire Routing on Creation** — Drag from a pin and release on empty canvas to enter manual routing mode; dashed preview and placement cursor snap to grid as you move; click on canvas to place straight-line waypoints one by one; click on an opposite-type pin to complete the wire with waypoints; click on a same-type pin or press Escape to cancel.
+29. **Manual Wire Routing on Creation** — Drag from a pin and release on empty canvas to enter manual routing mode; dashed preview and placement cursor snap to grid as you move; click on canvas to place straight-line waypoints one by one; click on an opposite-type pin to complete the wire with waypoints; click on a same-type pin, press Escape, or tap the cancel button to cancel.
 30. **Pin-to-Pin Auto-Route** — Dragging directly from a pin to another opposite-type pin creates an auto-routed (orthogonal) wire with no waypoints.
 31. **Wire Visual States** — Active (green), inactive (gray), selected (glowing green with inner white line).
 32. **Wire Crossing Discrimination** — Background outline stroke helps distinguish which wire is on top at intersections.
@@ -129,7 +129,8 @@
 96. **Mobile-Friendly Navigation** — Nav bar adapts with smaller icons and horizontal scroll.
 97. **Minimap Mobile Size** — Smaller minimap on mobile viewports.
 98. **Tooltips Disabled on Mobile** — CSS tooltips hidden (`display: none`) on mobile to avoid touch clutter.
-99. **Zoom Group Mobile Position** — Adjusted positioning for bottom controls on mobile.
+99. **Cancel Wire Button** — Floating "×" glassmorphism button appears above the bottom nav bar when dragging a wire or in manual routing mode; replaces the need for Escape key on mobile/touch devices.
+100. **Zoom Group Mobile Position** — Adjusted positioning for bottom controls on mobile.
 114. **Undo/Redo Buttons** — Bottom-right glass panel with undo/redo icons; disabled when no history available.
 115. **Selection Toolbar** — Top-center glass panel (Delete, Copy, Paste) appears only when components/wires/pins are selected; synced to selection state.
 
@@ -171,7 +172,7 @@
 111. **Smart Spawn Grid Alignment** — Components spawn snapped to half-grid.
 112. **Label Box Resize** — Bottom-right triangular handle; snap to half-grid; minimum size enforced.
 113. **Label Editor Inline** — Positioned over the component; scaled with camera zoom.
-114. **Escape to Deselect** — Pressing Escape deselects all, clears pins, wires, and closes open modals.
+114. **Escape to Deselect** — Pressing Escape deselects all, clears pins, wires, and closes open modals. Floating cancel button provides equivalent functionality on touch devices.
 115. **Keyboard Shortcuts Disabled in Inputs** — Global keydown handler skips when an INPUT or TEXTAREA is focused.
 116. **Simulation Tick on Wire Creation** — If simulation is running, immediately evaluates new wire connections.
 117. **roundRect Polyfill** — Fallback implementation for `CanvasRenderingContext2D.roundRect()`.

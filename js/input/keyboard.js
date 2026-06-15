@@ -146,15 +146,19 @@ export function setupKeyboardInput() {
     else if (e.key === "5") autoSpawn("label_box");
     else if (e.key === "6") autoSpawn("label");
     else if (e.key === "Escape") {
-      if (isRouting) {
-        setIsRouting(false); setRoutingSourcePin(null); setRoutingWaypoints([]);
-        draw(); return;
-      }
-      setSelectedPin(null); setSelectedWire(null); setSelectedComponents([]);
-      setDraggingPin(null); setHoveredPin(null); setSelectedWaypoint(null);
-      draw();
+      cancelWireOperation();
     }
   });
+}
+
+export function cancelWireOperation() {
+  if (isRouting) {
+    setIsRouting(false); setRoutingSourcePin(null); setRoutingWaypoints([]);
+    draw(); return;
+  }
+  setSelectedPin(null); setSelectedWire(null); setSelectedComponents([]);
+  setDraggingPin(null); setHoveredPin(null); setSelectedWaypoint(null);
+  draw();
 }
 
 function modeUI() {
