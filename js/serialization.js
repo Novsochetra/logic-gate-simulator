@@ -72,7 +72,6 @@ export function parseCircuit(compList, wireList, idMap = new Map(), assignNewIds
 
     if (assignNewIds && !nc.id) {
       const n = allocateNextId();
-      idMap.set(cc.id, { id: n });
       nc.id = n;
     }
     parsedComps.push(nc);
