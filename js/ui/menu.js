@@ -10,11 +10,11 @@ import {
   copyBtn, pasteBtn, deleteBtn, helpBtn,
   closeHelpBtn, helpModal,
   undoBtn, redoBtn,
-  selectionToolbar, toolbarDeleteBtn, toolbarCopyBtn, toolbarPasteBtn,
+  selectionToolbar, toolbarDeleteBtn, toolbarDuplicateBtn,
   selectAllBtn, copyIcInternalsBtn,
   popup,
 } from "../dom.js";
-import { doCopy, doPaste, doDelete, autoSpawn } from "../actions.js";
+import { doCopy, doPaste, doDelete, doDuplicate, autoSpawn } from "../actions.js";
 import { performUndo, performRedo } from "../history.js";
 import { modeUI } from "../input/keyboard.js";
 import { draw } from "../render.js";
@@ -50,8 +50,7 @@ export function setupMenuUI() {
 
   // Selection toolbar
   toolbarDeleteBtn?.addEventListener("click", () => { doDelete(); draw(); });
-  toolbarCopyBtn?.addEventListener("click", () => { doCopy(); draw(); });
-  toolbarPasteBtn?.addEventListener("click", () => { doPaste(); draw(); });
+  toolbarDuplicateBtn?.addEventListener("click", () => { doDuplicate(); });
 
   // Menu extras
   selectAllBtn?.addEventListener("click", () => {

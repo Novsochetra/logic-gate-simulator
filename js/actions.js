@@ -146,6 +146,28 @@ export function doDelete() {
   draw();
 }
 
+// ==================== DUPLICATE ====================
+export function doDuplicate() {
+  if (selectedComponents.length === 0) return;
+  pushHistory();
+  const sw = wires.filter(w => selectedComponents.includes(w.from.component) && selectedComponents.includes(w.to.component));
+  const data = serializeCircuit(selectedComponents, sw);
+  const r = parseCircuit(data.components, data.wires, new Map(), true);
+  setSelectedComponents([]);
+  r.comps.forEach(c => {
+    c.x = snapToGrid(c.x + 60);
+    c.y = snapToGrid(c.y + 60);
+    components.push(c);
+    selectedComponents.push(c);
+  });
+  r.wires.forEach(w => {
+    if (w.waypoints) w.waypoints.forEach(wp => { wp.x += 60; wp.y += 60; });
+    wires.push(w);
+  });
+  saveToLocalStorage();
+  draw();
+}
+
 // ==================== COPY / PASTE ====================
 export function doCopy(internal = false) {
   if (internal) {

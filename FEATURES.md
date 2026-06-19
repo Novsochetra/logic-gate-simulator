@@ -79,11 +79,12 @@
 62. **Auto-Load on Refresh** — Circuit loads automatically from localStorage on page load.
 
 ## Copy / Paste
-63. **Copy Selected (Cmd/Ctrl + C)** — Copies selected components and their internal wires to clipboard. Also available via selection toolbar.
+63. **Copy Selected (Cmd/Ctrl + C)** — Copies selected components and their internal wires to clipboard.
 64. **Copy IC Internals (Cmd/Ctrl + Shift + C)** — Copies internal components/wires of a selected Custom IC.
-65. **Paste (Cmd/Ctrl + V)** — Pastes copied components with incremental offset; preserves waypoints. Also available via selection toolbar.
+65. **Paste (Cmd/Ctrl + V)** — Pastes copied components with incremental offset; preserves waypoints.
 66. **Clipboard Persistence** — Clipboard saved to `localStorage` for cross-session and cross-workspace pasting.
 67. **Cross-Workspace Paste** — Copy from one workspace, switch workspaces, paste into another.
+68. **Duplicate (Selection Toolbar)** — One-click duplicate of selected components with 60px offset; combines copy and paste into a single action.
 
 ## Custom IC
 68. **Create IC (G)** — Selected components with at least one input/output can be packed into a Custom IC; external wires rerouted automatically.
@@ -132,7 +133,7 @@
 99. **Cancel Wire Button** — Floating "×" glassmorphism button appears above the bottom nav bar when dragging a wire or in manual routing mode; replaces the need for Escape key on mobile/touch devices.
 100. **Zoom Group Mobile Position** — Adjusted positioning for bottom controls on mobile.
 114. **Undo/Redo Buttons** — Bottom-right glass panel with undo/redo icons; disabled when no history available.
-115. **Selection Toolbar** — Top-center glass panel (Delete, Copy, Paste) appears only when components/wires/pins are selected; synced to selection state.
+115. **Selection Toolbar** — Top-center glass panel (Delete, Duplicate) appears only when components/wires/pins are selected; synced to selection state.
 
 ## Theming & Visual Polish
 100. **CSS Custom Properties (Multi-Theme)** — Comprehensive design token system (`--color-*` CSS variables) with 5 theme variants controlled by `data-theme` attribute on `<html>`.
